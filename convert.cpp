@@ -299,7 +299,7 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
     }
     instr = instr + "))";
 
-    string retinstr = string("return std::unique_ptr<") + consclass->parentname + ">("
+    string retinstr = string("return std::unique_ptr<") + consclass->parentname + ">(new "
         + consclass->name + "(" + applyMoveFunction("_val") + ")" + ")";
     
     m->instructions.push_back(instr);
@@ -372,6 +372,7 @@ void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
   string cname = CONVERT_TYPENAME(rtd->name);
   CppClass *tycc = new CppClass();
   tycc->name = cname;
+  classes_from_type[rtd->name] = tycc;
   cout << "Converting " << rtd->name << " to " << cname << ".." << endl;
   
   for(int i = 0; i < rtd->fields.size(); i++)
@@ -381,8 +382,6 @@ void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
 
   tycc->constructors.push_back(newRecordTyConstructor(tycc, fieldsForConstructor));
   tycc->methods.push_back(newRecordTySerializeMethod(tycc));
-  
-  classes_from_type[rtd->name] = tycc;
 }
 
 void convertTypeDec(Scheme *scheme, TypeDec *td, 
