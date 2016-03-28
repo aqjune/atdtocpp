@@ -1,0 +1,320 @@
+Terminals unused in grammar
+
+   TOK_WHITESPACE
+
+
+State 28 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: program typedec
+    2        | /* empty */
+
+    3 typedec: TOK_TYPE TOK_WORD TOK_EQUAL typedec_remain
+
+    4 typedec_remain: TOK_LISTBEGIN conslist TOK_LISTEND
+    5               | TOK_RECORDBEG fieldlist TOK_RECORDEND
+
+    6 conslist: TOK_OR TOK_WORD TOK_OF atdtype conslist
+    7         | /* empty */
+
+    8 fieldlist: TOK_WORD TOK_COLON atdtype TOK_SEMICOLON fieldlist
+    9          | /* empty */
+
+   10 atdtype: TOK_WORD
+   11        | TOK_PTBEGIN TOK_WORD TOK_PTEND
+   12        | atdtype TOK_PRODUCT atdtype
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+TOK_WHITESPACE (258)
+TOK_TYPE (259) 3
+TOK_RECORDBEG (260) 5
+TOK_RECORDEND (261) 5
+TOK_LISTBEGIN (262) 4
+TOK_LISTEND (263) 4
+TOK_OF (264) 6
+TOK_COLON (265) 8
+TOK_SEMICOLON (266) 8
+TOK_OR (267) 6
+TOK_PRODUCT (268) 12
+TOK_PTBEGIN (269) 11
+TOK_PTEND (270) 11
+TOK_WORD (271) 3 6 8 10 11
+TOK_EQUAL (272) 3
+
+
+Nonterminals, with rules where they appear
+
+$accept (18)
+    on left: 0
+program (19)
+    on left: 1 2, on right: 0 1
+typedec (20)
+    on left: 3, on right: 1
+typedec_remain (21)
+    on left: 4 5, on right: 3
+conslist (22)
+    on left: 6 7, on right: 4 6
+fieldlist (23)
+    on left: 8 9, on right: 5 8
+atdtype (24)
+    on left: 10 11 12, on right: 6 8 12
+
+
+State 0
+
+    0 $accept: . program $end
+
+    $default  reduce using rule 2 (program)
+
+    program  go to state 1
+
+
+State 1
+
+    0 $accept: program . $end
+    1 program: program . typedec
+
+    $end      shift, and go to state 2
+    TOK_TYPE  shift, and go to state 3
+
+    typedec  go to state 4
+
+
+State 2
+
+    0 $accept: program $end .
+
+    $default  accept
+
+
+State 3
+
+    3 typedec: TOK_TYPE . TOK_WORD TOK_EQUAL typedec_remain
+
+    TOK_WORD  shift, and go to state 5
+
+
+State 4
+
+    1 program: program typedec .
+
+    $default  reduce using rule 1 (program)
+
+
+State 5
+
+    3 typedec: TOK_TYPE TOK_WORD . TOK_EQUAL typedec_remain
+
+    TOK_EQUAL  shift, and go to state 6
+
+
+State 6
+
+    3 typedec: TOK_TYPE TOK_WORD TOK_EQUAL . typedec_remain
+
+    TOK_RECORDBEG  shift, and go to state 7
+    TOK_LISTBEGIN  shift, and go to state 8
+
+    typedec_remain  go to state 9
+
+
+State 7
+
+    5 typedec_remain: TOK_RECORDBEG . fieldlist TOK_RECORDEND
+
+    TOK_WORD  shift, and go to state 10
+
+    $default  reduce using rule 9 (fieldlist)
+
+    fieldlist  go to state 11
+
+
+State 8
+
+    4 typedec_remain: TOK_LISTBEGIN . conslist TOK_LISTEND
+
+    TOK_OR  shift, and go to state 12
+
+    $default  reduce using rule 7 (conslist)
+
+    conslist  go to state 13
+
+
+State 9
+
+    3 typedec: TOK_TYPE TOK_WORD TOK_EQUAL typedec_remain .
+
+    $default  reduce using rule 3 (typedec)
+
+
+State 10
+
+    8 fieldlist: TOK_WORD . TOK_COLON atdtype TOK_SEMICOLON fieldlist
+
+    TOK_COLON  shift, and go to state 14
+
+
+State 11
+
+    5 typedec_remain: TOK_RECORDBEG fieldlist . TOK_RECORDEND
+
+    TOK_RECORDEND  shift, and go to state 15
+
+
+State 12
+
+    6 conslist: TOK_OR . TOK_WORD TOK_OF atdtype conslist
+
+    TOK_WORD  shift, and go to state 16
+
+
+State 13
+
+    4 typedec_remain: TOK_LISTBEGIN conslist . TOK_LISTEND
+
+    TOK_LISTEND  shift, and go to state 17
+
+
+State 14
+
+    8 fieldlist: TOK_WORD TOK_COLON . atdtype TOK_SEMICOLON fieldlist
+
+    TOK_PTBEGIN  shift, and go to state 18
+    TOK_WORD     shift, and go to state 19
+
+    atdtype  go to state 20
+
+
+State 15
+
+    5 typedec_remain: TOK_RECORDBEG fieldlist TOK_RECORDEND .
+
+    $default  reduce using rule 5 (typedec_remain)
+
+
+State 16
+
+    6 conslist: TOK_OR TOK_WORD . TOK_OF atdtype conslist
+
+    TOK_OF  shift, and go to state 21
+
+
+State 17
+
+    4 typedec_remain: TOK_LISTBEGIN conslist TOK_LISTEND .
+
+    $default  reduce using rule 4 (typedec_remain)
+
+
+State 18
+
+   11 atdtype: TOK_PTBEGIN . TOK_WORD TOK_PTEND
+
+    TOK_WORD  shift, and go to state 22
+
+
+State 19
+
+   10 atdtype: TOK_WORD .
+
+    $default  reduce using rule 10 (atdtype)
+
+
+State 20
+
+    8 fieldlist: TOK_WORD TOK_COLON atdtype . TOK_SEMICOLON fieldlist
+   12 atdtype: atdtype . TOK_PRODUCT atdtype
+
+    TOK_SEMICOLON  shift, and go to state 23
+    TOK_PRODUCT    shift, and go to state 24
+
+
+State 21
+
+    6 conslist: TOK_OR TOK_WORD TOK_OF . atdtype conslist
+
+    TOK_PTBEGIN  shift, and go to state 18
+    TOK_WORD     shift, and go to state 19
+
+    atdtype  go to state 25
+
+
+State 22
+
+   11 atdtype: TOK_PTBEGIN TOK_WORD . TOK_PTEND
+
+    TOK_PTEND  shift, and go to state 26
+
+
+State 23
+
+    8 fieldlist: TOK_WORD TOK_COLON atdtype TOK_SEMICOLON . fieldlist
+
+    TOK_WORD  shift, and go to state 10
+
+    $default  reduce using rule 9 (fieldlist)
+
+    fieldlist  go to state 27
+
+
+State 24
+
+   12 atdtype: atdtype TOK_PRODUCT . atdtype
+
+    TOK_PTBEGIN  shift, and go to state 18
+    TOK_WORD     shift, and go to state 19
+
+    atdtype  go to state 28
+
+
+State 25
+
+    6 conslist: TOK_OR TOK_WORD TOK_OF atdtype . conslist
+   12 atdtype: atdtype . TOK_PRODUCT atdtype
+
+    TOK_OR       shift, and go to state 12
+    TOK_PRODUCT  shift, and go to state 24
+
+    $default  reduce using rule 7 (conslist)
+
+    conslist  go to state 29
+
+
+State 26
+
+   11 atdtype: TOK_PTBEGIN TOK_WORD TOK_PTEND .
+
+    $default  reduce using rule 11 (atdtype)
+
+
+State 27
+
+    8 fieldlist: TOK_WORD TOK_COLON atdtype TOK_SEMICOLON fieldlist .
+
+    $default  reduce using rule 8 (fieldlist)
+
+
+State 28
+
+   12 atdtype: atdtype . TOK_PRODUCT atdtype
+   12        | atdtype TOK_PRODUCT atdtype .
+
+    TOK_PRODUCT  shift, and go to state 24
+
+    TOK_PRODUCT  [reduce using rule 12 (atdtype)]
+    $default     reduce using rule 12 (atdtype)
+
+
+State 29
+
+    6 conslist: TOK_OR TOK_WORD TOK_OF atdtype conslist .
+
+    $default  reduce using rule 6 (conslist)

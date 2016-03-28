@@ -1,0 +1,360 @@
+type scope = [ Source | Target ] <ocaml repr="classic">
+
+type position_phinode = {
+  block_name : string;
+  prev_block_name : string;
+}
+
+type position_command = {
+  scope : scope;
+  register_name : string;
+}
+
+(* Position of an instruction is phinode or register *)
+type position = [
+  | Phinode of position_phinode
+  | Command of position_command
+  ] <ocaml repr="classic">
+
+(* If tag of register is one of Physical, Previous, and Ghost *)
+type tag = [ Physical | Previous | Ghost ] <ocaml repr="classic">
+
+type register = {
+  name : string; (* identifier of a register *)
+  tag : tag;     (* indicates whether this register is physical or previous or ghost *)
+}
+
+(* integer type of bitsize *)
+type int_type = [ IntType of int ] <ocaml repr="classic">
+
+(* float type *)
+(* http://llvm.org/docs/LangRef.html#floating-point-types *)
+(* http://llvm.org/docs/doxygen/html/classllvm_1_1APFloat.html *)
+type float_type = [ 
+    | HalfType (* equivalent to Llvm.APFloat.Semantics.IEEEhalf in LLVM ocaml binding *)
+               (* no matching type in Vellvm *)
+    | FloatType (* equivalent to Llvm.APFloat.Semantics.IEEEsingle in LLVM ocaml binding *)
+                (* equivalent to Syntax.LLVMsyntax.Coq_fp_float in Vellvm *)
+    | DoubleType (* equivalent to Llvm.APFloat.Semantics.IEEEdouble in LLVM ocaml binding *)
+                 (* equivalent to Syntax.LLVMsyntax.Coq_fp_double in Vellvm *)
+    | FP128Type (* equivalent to Llvm.APFloat.Semantics.IEEEquad in LLVM ocaml binding*)
+                (* equivalent to Syntax.LLVMsyntax.Coq_fp_fp128 in Vellvm*)
+    | PPC_FP128Type (* equivalent to Llvm.APFloat.Semantics.PPCDoubleDouble in LLVM ocaml binding *)
+                    (* equivalent to Syntax.LLVMsyntax.Coq_fp_ppc_fp128 in Vellvm*)
+    | X86_FP80Type (* equivalent to Llvm.APFloat.Semantics.X87DoubleExternded in LLVM ocaml binding *)
+                   (* equivalent to Syntax.LLVMsyntax.Coq_fp_x86_fp80 in Vellvm*)
+    ] <ocaml repr="classic">
+
+type const_int = {
+  int_value : int;
+  int_type : int_type;
+}
+
+type const_float = {
+  float_value : float;
+  float_type : float_type;
+}
+
+type constant = [ ConstInt of const_int | ConstFloat of const_float ] <ocaml repr="classic">
+
+type value = [ Id of register | ConstVal of constant ] <ocaml repr="classic">
+
+type size = [ Size of int ] <ocaml repr="classic">
+
+(*****************************************)
+(*              Propagates               *)
+(*****************************************)
+
+type expr = [
+  | Var of register
+  | Rhs of (register * scope)
+  | Const of constant
+] <ocaml repr="classic">
+
+type propagate_lessdef = {
+  lhs : expr;
+  rhs : expr;
+  scope : scope;
+}
+
+type propagate_noalias = {
+  lhs : register;
+  rhs : register;
+  scope : scope;
+}
+
+type propagate_object = [
+  | Lessdef of propagate_lessdef
+  | Noalias of propagate_noalias
+  | Maydiff of register
+  ] <ocaml repr="classic">
+
+type propagate_range = [
+  | Bounds of (position * position)
+  | Global
+  ] <ocaml repr="classic">
+
+type propagate = {
+  propagate : propagate_object;
+  propagate_range : propagate_range;
+}
+
+(*****************************************)
+(*             Inference rules           *)
+(*****************************************)
+
+type add_associative = {
+  x : register;
+  y : register;
+  z : register;
+  c1 : const_int;
+  c2 : const_int;
+  c3 : const_int;
+  sz : size;
+}
+
+type add_sub = {
+  minusy : register;
+  z : register;
+  x : value;
+  y : value;
+  sz : size;
+}
+
+type add_commutative = {
+  z : register;
+  x : value;
+  y : value;
+  sz : size;
+}
+
+type add_shift = {
+  y : register;
+  v : value;
+  sz : size;
+}
+
+type add_signbit = {
+  x : register;
+  e1 : value;
+  e2 : value;
+  sz : size;
+}
+
+type add_onebit = {
+  z : register;
+  x : value;
+  y : value;
+}
+
+type add_zext_bool = {
+  x : register;
+  y : register;
+  b : value;
+  c : const_int;
+  c' : const_int;
+  sz : size;
+}
+
+type add_const_not = {
+  z : register;
+  y : register;
+}
+
+type add_mask = {
+  z : register;
+  y : register;
+  yp: register;
+}
+
+type add_select_zero = {
+  z : register;
+  x : register;
+  y : register;
+}
+
+type add_select_zero2 = {
+  z : register;
+  x : register;
+  y : register;
+}
+
+type add_dist_sub = {
+  z : register;
+  minusx : register;
+  minusy : register;
+  w : register;
+}
+
+type mul_add_distributive = {
+  z : register;
+  x : register;
+  y : register;
+  w : register;
+}
+
+type sub_add = {
+  z : register;
+  my : value;
+  x : register;
+  y : value;
+  sz : size;
+}
+
+type neg_val = {
+  c1 : const_int;
+  c2 : const_int;
+  sz : size;
+}
+
+type sub_mone = {
+  z : register;
+}
+
+type sub_const_not = {
+  y : register;
+  z : register;
+}
+
+type sub_remove = {
+  z : register;
+  y : register;
+  a : value;
+  b : value;
+  sz : size;
+}
+
+type sub_remove2 = {
+  y : register;
+  z : register;
+}
+
+type sub_onebit = {
+  z : register;
+}
+
+type sub_const_add = {
+  y : register;
+  z : register;
+}
+
+type sub_sdiv = {
+  y : register;
+  z : register;
+}
+
+type sub_shl = {
+  x : register;
+  y : register;
+  z : register;
+}
+
+type mul_bool = {
+  z :register;
+  x :register;
+  y :register;
+}
+
+type mul_mone = {
+  z : register;
+}
+
+type mul_neg = {
+  z : register;
+  mx : register;
+  my : register;
+}
+
+type mul_commutative = {
+  z : register;
+}
+
+type mul_shl = {
+  z : register;
+  y : register;
+}
+
+type div_mone = {
+  z : register;
+}
+
+type and_de_morgan = {
+  z : register;
+  x : register;
+  y : register;
+  z2 : register;
+}
+
+type rem_neg = {
+  z : register;
+  my : register;
+}
+
+type div_sub_srem = {
+  z : register;
+  b : register;
+  a : register;
+}
+
+type div_sub_urem = {
+  z : register;
+  b : register;
+  a : register;
+}
+
+type infrule = [
+  | AddAssociative of add_associative
+  | AddSub of add_sub
+  | AddCommutative of add_commutative
+  | AddShift of add_shift
+  | AddSignbit of add_signbit
+  | AddOnebit of add_onebit
+  | AddZextBool of add_zext_bool
+  | AddConstNot of add_const_not
+  | AddMask of add_mask
+  | AddSelectZero of add_select_zero
+  | AddSelectZero2 of add_select_zero2
+  | AddDistSub of add_dist_sub
+  | MulAddDistributive of mul_add_distributive
+  | SubMone of sub_mone
+  | SubAdd of sub_add
+  | SubConstNot of sub_const_not
+  | SubRemove of sub_remove
+  | SubRemove2 of sub_remove2
+  | SubOnebit of sub_onebit
+  | SubConstAdd of sub_const_add
+  | SubSdiv of sub_sdiv
+  | SubShl of sub_shl
+  | MulBool of mul_bool
+  | MulMone of mul_mone
+  | MulNeg of mul_neg
+  | MulCommutative of mul_commutative
+  | MulShl of mul_shl
+  | DivMone of div_mone
+  | RemNeg of rem_neg
+  | DivSubSrem of div_sub_srem
+  | DivSubUrem of div_sub_urem
+  | AndDeMorgan of and_de_morgan
+  | NegVal of neg_val
+  ] <ocaml repr="classic">
+
+type command = [
+  | Propagate of propagate
+  | Infrule of (position * infrule)
+  ] <ocaml repr="classic">
+
+type nop_position = [
+  | PhinodeCurrentBlockName of string
+  | CommandRegisterName of string
+  ] <ocaml repr="classic">
+
+type hints = {
+  module_id : string;
+  function_id : string;
+  opt_name : string;
+
+  src_nop_positions: nop_position list; (* insert after position *)
+  tgt_nop_positions: nop_position list;
+
+  commands : command list;
+}

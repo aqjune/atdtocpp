@@ -1,0 +1,8 @@
+type c = {
+  x : int;
+  y : int;
+}
+
+type b = [C of c]
+
+type a = [B of b]
