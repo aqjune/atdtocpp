@@ -67,7 +67,7 @@ static CppMethod *newVirtualSerializeMethod(CppClass *parent){
   m->returnType = "void";
   m->name = "serialize";
   m->ispurevirtual = true;
-  m->args.push_back(new CppVariable("JSONOutputArchive&", "archive"));
+  m->args.push_back(new CppVariable("cereal::JSONOutputArchive&", "archive"));
   return m;
 }
 
@@ -81,7 +81,7 @@ static CppMethod *newInductiveConsSerializeMethod(CppClass *parent, string cons_
   m->name = "serialize";
   m->ispurevirtual = false;
   
-  m->args.push_back(new CppVariable("JSONOutputArchive&", "archive"));
+  m->args.push_back(new CppVariable("cereal::JSONOutputArchive&", "archive"));
   m->instructions.push_back("archive.makeArray()");
   m->instructions.push_back("archive.writeName()");
   m->instructions.push_back(string("archive.saveValue(\"") + cons_name + "\")");
@@ -111,7 +111,7 @@ static CppMethod *newRecordTySerializeMethod(CppClass *parent){
   m->name = "serialize";
   m->ispurevirtual = false;
   
-  m->args.push_back(new CppVariable("JSONOutputArchive&", "archive"));
+  m->args.push_back(new CppVariable("cereal::JSONOutputArchive&", "archive"));
 
   for(int i = 0; i < parent->fields.size(); i++){
     m->instructions.push_back(string("archive(CEREAL_NVP(") + parent->fields[i]->name + "))");
@@ -276,7 +276,7 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
   m->accmod = PUBLIC;
   m->parentClass = consclass;
   m->isstatic = true;
-  m->isconst = true;
+  m->isconst = false;
   m->returnType = toUniquePtrType(tyclass->name);;
   m->name = "make";
   m->ispurevirtual = false;
@@ -297,10 +297,10 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
         instr = instr + ", ";
       instr = instr + applyMoveFunction(m->args[i]->name);
     }
-    instr = instr + "));";
+    instr = instr + "))";
 
     string retinstr = string("return std::unique_ptr<") + consclass->parentname + ">("
-        + consclass->name + "(" + applyMoveFunction("_val") + ")" + ");";
+        + consclass->name + "(" + applyMoveFunction("_val") + ")" + ")";
     
     m->instructions.push_back(instr);
     m->instructions.push_back(retinstr);
@@ -352,11 +352,11 @@ void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd,
     vector<CppField *> fieldsForConstructor;
     conscc->name = ccname;
     conscc->parentname = cname;
-
+    
     convertTypesRecursively(scheme, atd_cons->argtype, classes_from_type, classes_from_cons);
     conscc->fields = newConsClassFields(atd_cons->argtype, fieldsForConstructor, classes_from_type);
     conscc->constructors.push_back(newInductiveConsConstructor(conscc, fieldsForConstructor));
-    
+
     if(CppMethod *makeMethod = newConsMakeMethod(conscc, tycc, atd_cons, scheme, fieldsForConstructor, classes_from_type)){
       conscc->methods.push_back(makeMethod);
     }
@@ -372,16 +372,17 @@ void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
   string cname = CONVERT_TYPENAME(rtd->name);
   CppClass *tycc = new CppClass();
   tycc->name = cname;
-  classes_from_type[rtd->name] = tycc;
   cout << "Converting " << rtd->name << " to " << cname << ".." << endl;
   
-  vector<CppField *> fieldsForConstructor;
   for(int i = 0; i < rtd->fields.size(); i++)
     convertTypesRecursively(scheme, rtd->fields[i]->type, classes_from_type, classes_from_cons);
+  vector<CppField *> fieldsForConstructor;
   tycc->fields = newRecordTyClassFields(rtd->fields, fieldsForConstructor, classes_from_type);
 
   tycc->constructors.push_back(newRecordTyConstructor(tycc, fieldsForConstructor));
-  tycc->methods.push_back(newRecordTySerializeMethod(tycc)); 
+  tycc->methods.push_back(newRecordTySerializeMethod(tycc));
+  
+  classes_from_type[rtd->name] = tycc;
 }
 
 void convertTypeDec(Scheme *scheme, TypeDec *td, 
