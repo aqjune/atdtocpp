@@ -1,39 +1,34 @@
-class TyA{
+struct TyA{
 public : 
-  virtual void serialize(JSONOutputArchive& archive) const = 0;
-
+  virtual void serialize(cereal::JSONOutputArchive& archive) const = 0;
 };
-class TyB{
+struct TyB{
 public : 
-  virtual void serialize(JSONOutputArchive& archive) const = 0;
-
+  virtual void serialize(cereal::JSONOutputArchive& archive) const = 0;
 };
-class TyC{
+struct TyC{
 public : 
   TyC(int _x, int _y);
-  void serialize(JSONOutputArchive& archive) const;
+  void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
   int x;
   int y;
-
 };
-class ConsB : public TyA{
+struct ConsC : public TyB{
 public : 
-  ConsB(std::unique_ptr<B> _b);
-  void serialize(JSONOutputArchive& archive) const;
+  ConsC(std::unique_ptr<TyC> _c);
+  static std::unique_ptr<TyB> make(int _x, int _y);
+  void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
-  std::unique_ptr<B> b;
-
+  std::unique_ptr<TyC> c;
 };
-class ConsC : public TyB{
+struct ConsB : public TyA{
 public : 
-  ConsC(std::unique_ptr<C> _c);
-  static std::unique_ptr<TyB> make(int _x, int _y) const;
-  void serialize(JSONOutputArchive& archive) const;
+  ConsB(std::unique_ptr<TyB> _b);
+  void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
-  std::unique_ptr<C> c;
-
+  std::unique_ptr<TyB> b;
 };

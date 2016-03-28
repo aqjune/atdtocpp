@@ -1,6 +1,6 @@
 ConsHalfType::ConsHalfType(){
 }
-void ConsHalfType::serialize(JSONOutputArchive& archive) const{
+void ConsHalfType::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
   archive.saveValue("HalfType");
@@ -8,7 +8,7 @@ void ConsHalfType::serialize(JSONOutputArchive& archive) const{
 
 ConsFloatType::ConsFloatType(){
 }
-void ConsFloatType::serialize(JSONOutputArchive& archive) const{
+void ConsFloatType::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
   archive.saveValue("FloatType");
@@ -16,7 +16,7 @@ void ConsFloatType::serialize(JSONOutputArchive& archive) const{
 
 ConsDoubleType::ConsDoubleType(){
 }
-void ConsDoubleType::serialize(JSONOutputArchive& archive) const{
+void ConsDoubleType::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
   archive.saveValue("DoubleType");
@@ -24,7 +24,7 @@ void ConsDoubleType::serialize(JSONOutputArchive& archive) const{
 
 ConsFP128Type::ConsFP128Type(){
 }
-void ConsFP128Type::serialize(JSONOutputArchive& archive) const{
+void ConsFP128Type::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
   archive.saveValue("FP128Type");
@@ -32,7 +32,7 @@ void ConsFP128Type::serialize(JSONOutputArchive& archive) const{
 
 ConsPPCFP128Type::ConsPPCFP128Type(){
 }
-void ConsPPCFP128Type::serialize(JSONOutputArchive& archive) const{
+void ConsPPCFP128Type::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
   archive.saveValue("PPC_FP128Type");
@@ -40,7 +40,7 @@ void ConsPPCFP128Type::serialize(JSONOutputArchive& archive) const{
 
 ConsX86FP80Type::ConsX86FP80Type(){
 }
-void ConsX86FP80Type::serialize(JSONOutputArchive& archive) const{
+void ConsX86FP80Type::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
   archive.saveValue("X86_FP80Type");
