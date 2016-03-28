@@ -9,6 +9,22 @@ using namespace std;
 
 #define CONVERT_TYPENAME(n) (string("Ty") + convertToCamelCase(n.c_str()))
 
+static string convertPrime(const char *c){
+  vector<char> ss;
+  const char *p = c;
+  while(*p){
+    if(*p == '\''){
+      ss.push_back('p');
+      ss.push_back('r');
+      ss.push_back('i');
+      ss.push_back('m');
+      ss.push_back('e');
+    }else
+      ss.push_back(*p);
+    p++;
+  }
+  return string(ss.begin(), ss.end());
+}
 static string convertToCamelCase(const char *c){
   vector<char> ss;
   const char *p = c;
@@ -112,7 +128,7 @@ static string toUniquePtrType(const string &ty){
 static string toVector(const string &ty){
   return string("std::vector<") + ty + (ty.back() == '>' ? " " : "") + ">";
 }
-static string toCppTypeName(const string &atdtype){
+static string toCppTypeName(map<string, CppClass *> &classes_from_type, const string &atdtype){
   if(atdtype == "string"){
     return "std::string";
   }else if(atdtype == "int"){
@@ -120,7 +136,8 @@ static string toCppTypeName(const string &atdtype){
   }else if(atdtype == "float"){
     return "double";
   }
-  return toUniquePtrType(convertToCamelCase(atdtype.c_str()));
+  assert(classes_from_type.find(atdtype) != classes_from_type.end());
+  return toUniquePtrType(classes_from_type[atdtype]->name);
 }
  
 static string applyMoveFunction(const string &val){
@@ -133,12 +150,12 @@ static void emitError(Type *t){
   assert(false);
 }
 
-vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForConstructor){
+vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForConstructor, map<string, CppClass *> &classes_from_type){
   vector<CppField *> v;
   
   if(NamedType *nd = dynamic_cast<NamedType *>(t)){
     CppField *cf = new CppField();
-    cf->type = toCppTypeName(nd->name);
+    cf->type = toCppTypeName(classes_from_type, nd->name);
     cf->accmod = PRIVATE;
     cf->isstatic = false;
 
@@ -154,7 +171,7 @@ vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForCons
       if(!dynamic_cast<NamedType *>(pt->children[i])){
         emitError(t);
       }
-      v.push_back(newConsClassFields(pt->children[i], fieldsForConstructor)[0]);
+      v.push_back(newConsClassFields(pt->children[i], fieldsForConstructor, classes_from_type)[0]);
     }
   }else if(ParameterizedType *pt = dynamic_cast<ParameterizedType *>(t)){
     NamedType *pnd = dynamic_cast<NamedType *>(pt->ty);
@@ -163,7 +180,7 @@ vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForCons
     }else if(pnd->name != "list"){
       emitError(t);
     }
-    v = newConsClassFields(pnd, fieldsForConstructor);
+    v = newConsClassFields(pnd, fieldsForConstructor, classes_from_type);
     if(v.size() == 1){
       v[0]->type = toVector(v[0]->type);
       v[0]->name = "vec_" + v[0]->name;
@@ -196,15 +213,15 @@ CppConstructor *newRecordTyConstructor(CppClass *cclass, vector<CppField *> &fie
   return cc;
 }
 
-vector<CppField *> newRecordTyClassFields(const vector<Field *> &vec, vector<CppField *> &fieldsForConstructor){
+vector<CppField *> newRecordTyClassFields(const vector<Field *> &vec, vector<CppField *> &fieldsForConstructor, map<string, CppClass *> &classes_from_type){
   for(int i = 0; i < vec.size(); i++){
     CppField *cf = new CppField();
     cf->accmod = PRIVATE;
-    cf->name = vec[i]->name;
+    cf->name = convertPrime(vec[i]->name.c_str());
 
     Type *t = vec[i]->type;
     if(NamedType *nt = dynamic_cast<NamedType *>(t)){
-      cf->type = toCppTypeName(nt->name); 
+      cf->type = toCppTypeName(classes_from_type, nt->name); 
     }else if(ProdType *pt = dynamic_cast<ProdType *>(t)){
       if(pt->children.size() > 2){
         emitError(t);
@@ -217,7 +234,7 @@ vector<CppField *> newRecordTyClassFields(const vector<Field *> &vec, vector<Cpp
         }
         if(i != 0)
           tyname = tyname + ", ";
-        tyname = tyname + toCppTypeName(nt->name);
+        tyname = tyname + toCppTypeName(classes_from_type, nt->name);
       }
       tyname = tyname + ">";
       cf->type = tyname;
@@ -229,7 +246,7 @@ vector<CppField *> newRecordTyClassFields(const vector<Field *> &vec, vector<Cpp
       }else if(pnt->name != "list"){
         emitError(t);
       }
-      string tyname = string("std::vector<") + toCppTypeName(argnt->name) + ">";
+      string tyname = string("std::vector<") + toCppTypeName(classes_from_type, argnt->name) + ">";
       cf->type = tyname;
     }
     fieldsForConstructor.push_back(cf);
@@ -335,12 +352,11 @@ void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd,
     vector<CppField *> fieldsForConstructor;
     conscc->name = ccname;
     conscc->parentname = cname;
-    conscc->fields = newConsClassFields(atd_cons->argtype, fieldsForConstructor);
-    conscc->constructors.push_back(newInductiveConsConstructor(conscc, fieldsForConstructor));
 
-    if(makeMethod_doRedirect(scheme, atd_cons)){
-      convertTypesRecursively(scheme, atd_cons->argtype, classes_from_type, classes_from_cons);
-    }
+    convertTypesRecursively(scheme, atd_cons->argtype, classes_from_type, classes_from_cons);
+    conscc->fields = newConsClassFields(atd_cons->argtype, fieldsForConstructor, classes_from_type);
+    conscc->constructors.push_back(newInductiveConsConstructor(conscc, fieldsForConstructor));
+    
     if(CppMethod *makeMethod = newConsMakeMethod(conscc, tycc, atd_cons, scheme, fieldsForConstructor, classes_from_type)){
       conscc->methods.push_back(makeMethod);
     }
@@ -356,15 +372,16 @@ void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
   string cname = CONVERT_TYPENAME(rtd->name);
   CppClass *tycc = new CppClass();
   tycc->name = cname;
+  classes_from_type[rtd->name] = tycc;
   cout << "Converting " << rtd->name << " to " << cname << ".." << endl;
   
   vector<CppField *> fieldsForConstructor;
-  tycc->fields = newRecordTyClassFields(rtd->fields, fieldsForConstructor);
+  for(int i = 0; i < rtd->fields.size(); i++)
+    convertTypesRecursively(scheme, rtd->fields[i]->type, classes_from_type, classes_from_cons);
+  tycc->fields = newRecordTyClassFields(rtd->fields, fieldsForConstructor, classes_from_type);
 
   tycc->constructors.push_back(newRecordTyConstructor(tycc, fieldsForConstructor));
-  tycc->methods.push_back(newRecordTySerializeMethod(tycc));
-  
-  classes_from_type[rtd->name] = tycc;
+  tycc->methods.push_back(newRecordTySerializeMethod(tycc)); 
 }
 
 void convertTypeDec(Scheme *scheme, TypeDec *td, 

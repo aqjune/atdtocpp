@@ -201,39 +201,44 @@ void CppClass::printDec(ostream &out, int indentation, PrintConfig *config){
     classify(fields[i],         publics, protecteds, privates);
 
   printIndentation(out, indentation, config);
-  out << "class " << this->name;
+  out << "struct " << this->name;
   if(this->parentname.length() > 0)
     out << " : public " << parentname;
   out << "{" << endl;
 
+  bool printed = false;
   if(publics.size() > 0){
     printIndentation(out, indentation, config);
     out << "public : " << endl;
     for(int i = 0; i < publics.size(); i++){
       publics[i]->printDec(out, indentation + 1, config, false);
+      printed = true;
       out << endl;
     }
-    out << endl;
   }
 
   if(protecteds.size() > 0){
+    if(printed) out << endl;
+
     printIndentation(out, indentation, config);
     out << "protected : " << endl;
     for(int i = 0; i < protecteds.size(); i++){
       protecteds[i]->printDec(out, indentation + 1, config, false);
+      printed = true;
       out << endl;
     }
-    out << endl;
   }
 
   if(privates.size() > 0){
+    if(printed) out << endl;
+
     printIndentation(out, indentation, config);
     out << "private : " << endl;
     for(int i = 0; i < privates.size(); i++){
       privates[i]->printDec(out, indentation + 1, config, false);
+      printed = true;
       out << endl;
     }
-    out << endl;
   }
   printIndentation(out, indentation, config);
   out << "};";
