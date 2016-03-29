@@ -6,7 +6,7 @@ extern "C" int yylex();
 using namespace std;
 
 void print_token(char *c){
-//  printf("token %s\n", c);
+  //printf("token %s\n", c);
 }
 %}
 
@@ -36,7 +36,9 @@ void print_token(char *c){
 "("             return TOK_PTBEGIN;
 ")"             return TOK_PTEND;
 "="             return TOK_EQUAL;
-[a-zA-Z_0-9']+     { char *c = new char[strlen(yytext)];
+[a-zA-Z_0-9']+     { int len = strlen(yytext);
+                  char *c = new char[len + 1];
+                  c[len] = 0;
                   strcpy(c, yytext);
                   yylval.str_ty = c; 
                   print_token(c);

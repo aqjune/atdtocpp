@@ -1,0 +1,99 @@
+type scope = [ Source | Target ] <ocaml repr="classic">
+
+type position_phinode = {
+  block_name : string;
+  prev_block_name : string;
+}
+
+type position_command = {
+  scope : scope;
+  register_name : string;
+}
+
+(* Position of an instruction is phinode or register *)
+type position = [
+  | Phinode of position_phinode
+  | Command of position_command
+  ] <ocaml repr="classic">
+
+(* If tag of register is one of Physical, Previous, and Ghost *)
+type tag = [ Physical | Previous | Ghost ] <ocaml repr="classic">
+
+type register = {
+  name : string; (* identifier of a register *)
+  tag : tag;     (* indicates whether this register is physical or previous or ghost *)
+}
+
+(* integer type of bitsize *)
+type int_type = [ IntType of int ] <ocaml repr="classic">
+
+(* float type *)
+(* http://llvm.org/docs/LangRef.html#floating-point-types *)
+(* http://llvm.org/docs/doxygen/html/classllvm_1_1APFloat.html *)
+type float_type = [ 
+    | HalfType (* equivalent to Llvm.APFloat.Semantics.IEEEhalf in LLVM ocaml binding *)
+               (* no matching type in Vellvm *)
+    | FloatType (* equivalent to Llvm.APFloat.Semantics.IEEEsingle in LLVM ocaml binding *)
+                (* equivalent to Syntax.LLVMsyntax.Coq_fp_float in Vellvm *)
+    | DoubleType (* equivalent to Llvm.APFloat.Semantics.IEEEdouble in LLVM ocaml binding *)
+                 (* equivalent to Syntax.LLVMsyntax.Coq_fp_double in Vellvm *)
+    | FP128Type (* equivalent to Llvm.APFloat.Semantics.IEEEquad in LLVM ocaml binding*)
+                (* equivalent to Syntax.LLVMsyntax.Coq_fp_fp128 in Vellvm*)
+    | PPC_FP128Type (* equivalent to Llvm.APFloat.Semantics.PPCDoubleDouble in LLVM ocaml binding *)
+                    (* equivalent to Syntax.LLVMsyntax.Coq_fp_ppc_fp128 in Vellvm*)
+    | X86_FP80Type (* equivalent to Llvm.APFloat.Semantics.X87DoubleExternded in LLVM ocaml binding *)
+                   (* equivalent to Syntax.LLVMsyntax.Coq_fp_x86_fp80 in Vellvm*)
+    ] <ocaml repr="classic">
+
+type const_int = {
+  int_value : int;
+  int_type : int_type;
+}
+
+type const_float = {
+  float_value : float;
+  float_type : float_type;
+}
+
+type constant = [ ConstInt of const_int | ConstFloat of const_float ] <ocaml repr="classic">
+
+type value = [ Id of register | ConstVal of constant ] <ocaml repr="classic">
+
+type size = [ Size of int ] <ocaml repr="classic">
+
+(*****************************************)
+(*              Propagates               *)
+(*****************************************)
+
+type expr = [
+  | Var of register
+  | Rhs of (register * scope)
+  | Const of constant
+] <ocaml repr="classic">
+
+(*****************************************)
+(*             Inference rules           *)
+(*****************************************)
+
+type add_associative = {
+  x : register;
+  y : register;
+  z : register;
+  c1 : const_int;
+  c2 : const_int;
+  c3 : const_int;
+  sz : size;
+}
+
+type transitivity_pointer_lhs = {
+  p : value;
+  q : value;
+  v : value;
+  loadq : expr;
+}
+
+type infrule = [
+  | AddAssociative of add_associative
+  | TransitivityPointersLhs of transitivity_pointer_lhs
+  ] <ocaml repr="classic">
+  
