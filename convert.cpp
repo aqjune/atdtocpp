@@ -400,8 +400,9 @@ void convert(Scheme *scm, const char *cppout, const char *hppout){
   ofstream cppfout(cppout);
   ofstream hppfout(hppout);
 
-  map<string, CppClass *> classes_from_type;
+  map<string, CppTopLevelElement *> classes_from_type;
   vector<CppClass *> classes_from_cons;
+  vector<CppGlobalFunction *> makefuncs_forenum;
 
   for(auto itr = scm->decs.begin(); itr != scm->decs.end(); itr++){
     convertTypeDec(scm, itr->second, classes_from_type, classes_from_cons);
@@ -410,10 +411,16 @@ void convert(Scheme *scm, const char *cppout, const char *hppout){
   PrintConfig pc;
   pc.indentsize = 2;
   for(auto itr = classes_from_type.begin(); itr != classes_from_type.end(); itr++){
-    (itr->second)->printDec(hppfout, 0, &pc);
-    hppfout << endl;
-    int printedelems = (itr->second)->printDef(cppfout, 0, &pc);
-    if(printedelems) cppfout << endl;
+    CppTopLevelElement *elem = itr->second;
+    if(CppClass *cc = dynamic_cast<CppClass *>(elem)){
+      cc->printDec(hppfout, 0, &pc);
+      hppfout << endl;
+      int printedelems = (itr->second)->printDef(cppfout, 0, &pc);
+      if(printedelems) cppfout << endl;
+    }else if(CppEnum *ce = dynamic_cast<CppEnum *>(elem)){
+      ce->printDec(hppfout, 0, &pc);
+      hppfout << endl;
+    }
   }
   for(auto itr = classes_from_cons.begin(); itr != classes_from_cons.end(); itr++){
     (*itr)->printDec(hppfout, 0, &pc);

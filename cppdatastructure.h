@@ -74,8 +74,25 @@ public:
   bool printDef(ostream &out, int indentation, PrintConfig *config);
 };
 
+class CppTopLevelItemElement{
+};
 
-class CppClass{
+class CppGlobalFunction : public CppMember{
+public:
+  bool isstatic;
+  string returnType;
+  string name;
+  vector<CppVariable *> args;
+  vector<string> instructions;
+  
+  CppGlobalFunction();
+
+  void printDec(ostream &out, int indentation, PrintConfig *config, bool printAccMod);
+  bool printDef(ostream &out, int indentation, PrintConfig *config);
+};
+
+
+class CppClass : public CppTopLevelElement{
 public:
   string name;
   string parentname;
@@ -85,6 +102,14 @@ public:
 
   void printDec(ostream &out, int indentation, PrintConfig *config);
   int printDef(ostream &out, int indentation, PrintConfig *config);
+};
+
+class CppEnum : public CppTopLevelElement{
+public:
+  string name;
+  vector<string> elements;
+
+  void printDec(ostream &out, int indentation,PrintConfig *config);
 };
 
 #endif
