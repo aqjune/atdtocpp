@@ -35,7 +35,7 @@ public:
   NamedType(string _name):name(_name){}
   
   bool isReservedKeyword(){
-    return name == "string" || name == "list" || name == "int" || name == "float";
+    return name == "string" || name == "list" || name == "int" || name == "float" || name == "bool";
   }
 
   virtual void print(){

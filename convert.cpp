@@ -135,6 +135,8 @@ static string toCppTypeName(map<string, CppClass *> &classes_from_type, const st
     return "int";
   }else if(atdtype == "float"){
     return "double";
+  }else if(atdtype == "bool"){
+    return "bool";
   }
   assert(classes_from_type.find(atdtype) != classes_from_type.end());
   return toUniquePtrType(classes_from_type[atdtype]->name);
@@ -145,8 +147,9 @@ static string applyMoveFunction(const string &val){
 }
 
 static void emitError(Type *t){
-  cerr << "we do not support conversion of this type : ";
+  cerr << "ERROR : we do not support conversion of this type : ";
   t->print();
+  cerr << endl;
   assert(false);
 }
 
@@ -240,13 +243,36 @@ vector<CppField *> newRecordTyClassFields(const vector<Field *> &vec, vector<Cpp
       cf->type = tyname;
     }else if(ParameterizedType *pt = dynamic_cast<ParameterizedType *>(t)){
       NamedType *pnt = dynamic_cast<NamedType *>(pt->ty);
-      NamedType *argnt = dynamic_cast<NamedType *>(pt->arg);
-      if(!pnt || !argnt){
-        emitError(t);
-      }else if(pnt->name != "list"){
+      if(!pnt || pnt->name != "list"){
         emitError(t);
       }
-      string tyname = string("std::vector<") + toCppTypeName(classes_from_type, argnt->name) + ">";
+      
+      ProdType *argpt = dynamic_cast<ProdType *>(pt->arg);
+      NamedType *argpt_typ1 = nullptr, *argpt_typ2 = nullptr;
+      NamedType *argnt = dynamic_cast<NamedType *>(pt->arg);
+      if(!argpt && !argnt){
+        emitError(t);
+      }else if(argpt){
+        if(argpt->children.size() != 2){
+          emitError(t);
+        }
+        argpt_typ1 = dynamic_cast<NamedType *>(argpt->children[0]);
+        argpt_typ2 = dynamic_cast<NamedType *>(argpt->children[1]);
+        if(!argpt_typ1 || !argpt_typ2){
+          emitError(t);
+        }
+      }
+      string tyname = "std::vector<";
+      if(argnt){
+        tyname = tyname + toCppTypeName(classes_from_type, argnt->name);
+      }else if(argpt){
+        tyname = tyname + "std::pair<" + toCppTypeName(classes_from_type, argpt_typ1->name)
+                + ", " + toCppTypeName(classes_from_type, argpt_typ2->name)
+                + "> ";
+      }else{
+        assert(argnt != nullptr || argpt != nullptr);
+      }
+      tyname = tyname + ">";
       cf->type = tyname;
     }
     fieldsForConstructor.push_back(cf);
