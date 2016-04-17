@@ -157,9 +157,31 @@ bool CppMethod::printDef(ostream &out, int indentation, PrintConfig *config){
   return true;
 }
 
+CppType::CppType(std::string name){
+  this->name = name;
+}
+CppType::CppType(std::string name, std::vector<CppType *> &args){
+  this->name = name;
+  this->templateArgs = args;
+}
+
+string CppType::toString(){
+  std::string st = this->name;
+  if(this->templateArgs.size() != 0){
+    st += "<";
+    for(int i = 0; i < templateArgs.size(); i++){
+      if(i != 0)
+        st += ",";
+      st += templateArgs[i]->toString();
+    }
+    st += ">";
+  }
+  return st;
+}
 
 CppField::CppField(){
   this->isstatic = false;
+  this->type = nullptr;
   this->accmod = PRIVATE;
 }
 
@@ -172,7 +194,7 @@ void CppField::printDec(ostream &out, int indentation, PrintConfig *config, bool
   printIndentation(out, indentation, config);
   if(this->isstatic)
     out << "static ";
-  out << this->type << " ";
+  out << this->type->toString() << " ";
   out << name;
   
   out << ";";

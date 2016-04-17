@@ -26,6 +26,17 @@ public:
 
 class CppClass;
 
+class CppType{
+public:
+  string name;
+  vector<CppType *> templateArgs;
+
+  CppType(string name);
+  CppType(string name, vector<CppType *> &args);
+  
+  string toString();
+};
+
 class CppMember{
 public:
   CppAccessModifier accmod;
@@ -36,7 +47,7 @@ public:
 class CppField : public CppMember{
 public:
   bool isstatic;
-  string type;
+  CppType *type;
   string name;
  
   CppField();

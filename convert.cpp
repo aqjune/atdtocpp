@@ -122,21 +122,25 @@ static CppMethod *newRecordTySerializeMethod(CppClass *parent){
 
 
 
-static string toUniquePtrType(const string &ty){
-  return string("std::unique_ptr<") + ty + (ty.back() == '>' ? " " : "") + ">";
+static CppType *toUniquePtrType(const string &ty){
+  CppType *ct = new CppType("std::unique_ptr");
+  ct->templateArgs.push_back(new CppType(ty));
+  return ct;
 }
-static string toVector(const string &ty){
-  return string("std::vector<") + ty + (ty.back() == '>' ? " " : "") + ">";
+static CppType *toVector(const string &ty){
+  CppType *ct = new CppType("std::vector");
+  ct->templateArgs.push_back(new CppType(ty));
+  return ct;
 }
-static string toCppTypeName(map<string, CppClass *> &classes_from_type, const string &atdtype){
+static CppType *toCppType(map<string, CppClass *> &classes_from_type, const string &atdtype){
   if(atdtype == "string"){
-    return "std::string";
+    return new CppType("std::string");
   }else if(atdtype == "int"){
-    return "int";
+    return new CppType("int");
   }else if(atdtype == "float"){
-    return "double";
+    return new CppType("double");
   }else if(atdtype == "bool"){
-    return "bool";
+    return new CppType("bool");
   }
   assert(classes_from_type.find(atdtype) != classes_from_type.end());
   return toUniquePtrType(classes_from_type[atdtype]->name);
@@ -158,13 +162,13 @@ vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForCons
   
   if(NamedType *nd = dynamic_cast<NamedType *>(t)){
     CppField *cf = new CppField();
-    cf->type = toCppTypeName(classes_from_type, nd->name);
+    cf->type = toCppType(classes_from_type, nd->name);
     cf->accmod = PRIVATE;
     cf->isstatic = false;
 
     if(nd->isReservedKeyword()){
       cf->name = std::string("a");
-      cf->name[0] = cf->type[0];
+      cf->name[0] = cf->type->toString()[0];
     }else{
       cf->name = nd->name;
     }
@@ -185,7 +189,7 @@ vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForCons
     }
     v = newConsClassFields(pnd, fieldsForConstructor, classes_from_type);
     if(v.size() == 1){
-      v[0]->type = toVector(v[0]->type);
+      v[0]->type = toVector(v[0]->type->toString());
       v[0]->name = "vec_" + v[0]->name;
     }else{
       emitError(t);
@@ -199,7 +203,7 @@ CppConstructor *newInductiveConsConstructor(CppClass *cclass, vector<CppField *>
   CppConstructor *cc = new CppConstructor();
   cc->parentClass = cclass;
   for(int i = 0; i < fieldsForConstructor.size(); i++){
-    CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type, string("_") + fieldsForConstructor[i]->name);
+    CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type->toString(), string("_") + fieldsForConstructor[i]->name);
     cc->args.push_back(vv);
     cc->initializers.push_back(make_pair(fieldsForConstructor[i], applyMoveFunction(vv->name)));
   }
@@ -209,7 +213,7 @@ CppConstructor *newRecordTyConstructor(CppClass *cclass, vector<CppField *> &fie
   CppConstructor *cc = new CppConstructor();
   cc->parentClass = cclass;
   for(int i = 0; i < fieldsForConstructor.size(); i++){
-    CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type, string("_") + fieldsForConstructor[i]->name);
+    CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type->toString(), string("_") + fieldsForConstructor[i]->name);
     cc->args.push_back(vv);
     cc->initializers.push_back(make_pair(fieldsForConstructor[i], applyMoveFunction(vv->name)));
   }
@@ -224,23 +228,20 @@ vector<CppField *> newRecordTyClassFields(const vector<Field *> &vec, vector<Cpp
 
     Type *t = vec[i]->type;
     if(NamedType *nt = dynamic_cast<NamedType *>(t)){
-      cf->type = toCppTypeName(classes_from_type, nt->name); 
+      cf->type = toCppType(classes_from_type, nt->name); 
     }else if(ProdType *pt = dynamic_cast<ProdType *>(t)){
       if(pt->children.size() > 2){
         emitError(t);
       }
-      string tyname = "std::pair<";
+      vector<CppType *> templateargs;
       for(int i = 0; i < pt->children.size(); i++){
         NamedType *nt = dynamic_cast<NamedType *>(pt->children[i]);
         if(!nt){
           emitError(t);
         }
-        if(i != 0)
-          tyname = tyname + ", ";
-        tyname = tyname + toCppTypeName(classes_from_type, nt->name);
+        templateargs.push_back(toCppType(classes_from_type, nt->name));
       }
-      tyname = tyname + ">";
-      cf->type = tyname;
+      cf->type = new CppType("std::pair", templateargs);
     }else if(ParameterizedType *pt = dynamic_cast<ParameterizedType *>(t)){
       NamedType *pnt = dynamic_cast<NamedType *>(pt->ty);
       if(!pnt || pnt->name != "list"){
@@ -262,18 +263,18 @@ vector<CppField *> newRecordTyClassFields(const vector<Field *> &vec, vector<Cpp
           emitError(t);
         }
       }
-      string tyname = "std::vector<";
+      vector<CppType *> templateargs;
       if(argnt){
-        tyname = tyname + toCppTypeName(classes_from_type, argnt->name);
+        templateargs.push_back(toCppType(classes_from_type, argnt->name));
       }else if(argpt){
-        tyname = tyname + "std::pair<" + toCppTypeName(classes_from_type, argpt_typ1->name)
-                + ", " + toCppTypeName(classes_from_type, argpt_typ2->name)
-                + "> ";
+        vector<CppType *> pairtemplateargs;
+        pairtemplateargs.push_back(toCppType(classes_from_type, argpt_typ1->name));
+        pairtemplateargs.push_back(toCppType(classes_from_type, argpt_typ2->name));
+        templateargs.push_back(new CppType("std::pair", pairtemplateargs));
       }else{
         assert(argnt != nullptr || argpt != nullptr);
       }
-      tyname = tyname + ">";
-      cf->type = tyname;
+      cf->type = new CppType("std::vector", templateargs);
     }
     fieldsForConstructor.push_back(cf);
   }
@@ -303,7 +304,7 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
   m->parentClass = consclass;
   m->isstatic = true;
   m->isconst = false;
-  m->returnType = toUniquePtrType(tyclass->name);;
+  m->returnType = toUniquePtrType(tyclass->name)->toString();
   m->name = "make";
   m->ispurevirtual = false;
   
