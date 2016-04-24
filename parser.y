@@ -152,14 +152,10 @@ atdtype:
 %%
 
 
-int main(int argc, char** argv) {
-  if(argc != 4){
-    cout << "atdtocpp <.atd input file> <.cpp output file> <.h output file>" << endl;
-    return 0;
-  }
-  FILE *myfile = fopen(argv[1], "r");
+int doParse(char* fname) {
+  FILE *myfile = fopen(fname, "r");
   if (!myfile) {
-    cout << "I can't open " << argv[1] << endl;
+    cout << "I can't open " << fname << endl;
     return -1;
   }
   yyin = myfile;
@@ -167,8 +163,6 @@ int main(int argc, char** argv) {
   do{
     yyparse();
   }while(!feof(yyin));
-  
-  convert(root, argv[2], argv[3]);
 }
 void yyerror(const char *s) {
   cout << "EEK, parse error!  Message: " << s << endl;
