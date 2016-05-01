@@ -31,14 +31,14 @@ int main(int argc, char** argv) {
 
     RecordTypeDec *itemdec = dynamic_cast<RecordTypeDec*>(root->decs[argty->name]);
     assert(itemdec);
-    fout << "| CoreHint_t." << cons->name << " (args:CoreHint_t." << argty->name << ") -> " << endl;
+    fout << "  | CoreHint_t." << cons->name << " (args:CoreHint_t." << argty->name << ") -> " << endl;
 
     string args = "(";
     for(auto fitr = itemdec->fields.begin(); fitr != itemdec->fields.end(); fitr++){
       Field *f = *fitr;
       NamedType *ftype = dynamic_cast<NamedType*>(f->type);
       assert(ftype);
-      fout << "   let " << f->name << " = Convert." << ftype->name << 
+      fout << "     let " << f->name << " = Convert." << ftype->name << 
           " args." << f->name << " in" << endl;
 
       if(fitr != itemdec->fields.begin())
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
       args += f->name;
     }
     args += ")";
-    fout << "  Infrule.Coq_" << argty->name << " " << args << endl;
+    fout << "     Infrule.Coq_" << argty->name << " " << args << endl;
   }
 
   return 0;
