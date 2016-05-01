@@ -122,8 +122,8 @@ static CppMethod *newRecordTySerializeMethod(CppClass *parent){
 
 
 
-static CppType *toUniquePtrType(const string &ty){
-  CppType *ct = new CppType("std::unique_ptr");
+static CppType *toSharedPtrType(const string &ty){
+  CppType *ct = new CppType("std::shared_ptr");
   ct->templateArgs.push_back(new CppType(ty));
   return ct;
 }
@@ -143,7 +143,7 @@ static CppType *toCppType(map<string, CppClass *> &classes_from_type, const stri
     return new CppType("bool");
   }
   assert(classes_from_type.find(atdtype) != classes_from_type.end());
-  return toUniquePtrType(classes_from_type[atdtype]->name);
+  return toSharedPtrType(classes_from_type[atdtype]->name);
 }
  
 static string applyMoveFunction(const string &val){
@@ -205,7 +205,7 @@ CppConstructor *newInductiveConsConstructor(CppClass *cclass, vector<CppField *>
   for(int i = 0; i < fieldsForConstructor.size(); i++){
     CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type->toString(), string("_") + fieldsForConstructor[i]->name);
     cc->args.push_back(vv);
-    cc->initializers.push_back(make_pair(fieldsForConstructor[i], applyMoveFunction(vv->name)));
+    cc->initializers.push_back(make_pair(fieldsForConstructor[i], /*applyMoveFunction(*/vv->name/*)*/));
   }
   return cc;
 }
@@ -215,7 +215,7 @@ CppConstructor *newRecordTyConstructor(CppClass *cclass, vector<CppField *> &fie
   for(int i = 0; i < fieldsForConstructor.size(); i++){
     CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type->toString(), string("_") + fieldsForConstructor[i]->name);
     cc->args.push_back(vv);
-    cc->initializers.push_back(make_pair(fieldsForConstructor[i], applyMoveFunction(vv->name)));
+    cc->initializers.push_back(make_pair(fieldsForConstructor[i], /*applyMoveFunction(*/vv->name/*)*/));
   }
   return cc;
 }
@@ -304,7 +304,7 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
   m->parentClass = consclass;
   m->isstatic = true;
   m->isconst = false;
-  m->returnType = toUniquePtrType(tyclass->name)->toString();
+  m->returnType = toSharedPtrType(tyclass->name)->toString();
   m->name = "make";
   m->ispurevirtual = false;
   
@@ -317,17 +317,17 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
     CppConstructor *cppcons = argclass->constructors[0];
     m->args = cppcons->args;
 
-    string instr = string("std::unique_ptr<") + argclass->name + "> _val(new " + argclass->name
+    string instr = toSharedPtrType(argclass->name)->toString() + " _val(new " + argclass->name
                         + "(";
     for(int i = 0; i < m->args.size(); i++){
       if(i != 0)
         instr = instr + ", ";
-      instr = instr + applyMoveFunction(m->args[i]->name);
+      instr = instr + /*applyMoveFunction(*/m->args[i]->name/*)*/;
     }
     instr = instr + "))";
 
-    string retinstr = string("return std::unique_ptr<") + consclass->parentname + ">(new "
-        + consclass->name + "(" + applyMoveFunction("_val") + ")" + ")";
+    string retinstr = string("return std::shared_ptr<") + consclass->parentname + ">(new "
+        + consclass->name + "(" + /*applyMoveFunction(*/"_val"/*)*/ + ")" + ")";
     
     m->instructions.push_back(instr);
     m->instructions.push_back(retinstr);
@@ -438,13 +438,13 @@ void convert(Scheme *scm, const char *cppout, const char *hppout){
   pc.indentsize = 2;
   for(auto itr = classes_from_type.begin(); itr != classes_from_type.end(); itr++){
     (itr->second)->printDec(hppfout, 0, &pc);
-    hppfout << endl;
+    hppfout << endl << endl;
     int printedelems = (itr->second)->printDef(cppfout, 0, &pc);
     if(printedelems) cppfout << endl;
   }
   for(auto itr = classes_from_cons.begin(); itr != classes_from_cons.end(); itr++){
     (*itr)->printDec(hppfout, 0, &pc);
-    hppfout << endl;
+    hppfout << endl << endl;
     int printedelems = (*itr)->printDef(cppfout, 0, &pc);
     if(printedelems) cppfout << endl;
   }

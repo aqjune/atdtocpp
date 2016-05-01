@@ -1,6 +1,6 @@
 %{
 #include "datastructure.h"
-#include "main.tab.h"
+#include "parser.tab.h"
 #include <string>
 extern "C" int yylex();
 using namespace std;

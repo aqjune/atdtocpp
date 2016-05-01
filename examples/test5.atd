@@ -1,0 +1,5 @@
+type c = [D | E | F]
+
+type b = [C of c]
+
+type a = [B of b]
