@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm>
 #include <cassert>
 using namespace std;
 
@@ -341,12 +342,12 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
 
 void convertTypeDec(Scheme *scheme, TypeDec *td, 
                 map<string, CppClass *> &classes_from_type, 
-                vector<CppClass *> &classes_from_cons);
+                map<string, CppClass *> &classes_from_cons);
 
 
 
 void convertTypesRecursively(Scheme *scheme, Type *t, map<string, CppClass *> &classes_from_type,
-                vector<CppClass *> &classes_from_cons){
+                map<string, CppClass *> &classes_from_cons){
   if(NamedType *nt = dynamic_cast<NamedType *>(t)){
     if(nt->isReservedKeyword()) return;
     assert(scheme->decs.find(nt->name) != scheme->decs.end());
@@ -363,7 +364,7 @@ void convertTypesRecursively(Scheme *scheme, Type *t, map<string, CppClass *> &c
 
 void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd, 
                 map<string, CppClass *> &classes_from_type,
-                vector<CppClass *> &classes_from_cons){
+                map<string, CppClass *> &classes_from_cons){
   string cname = CONVERT_TYPENAME(itd->name);
   CppClass *tycc = new CppClass();
   tycc->name = cname;
@@ -389,13 +390,13 @@ void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd,
     }
     conscc->methods.push_back(newInductiveConsSerializeMethod(conscc, atd_cons->name));
     
-    classes_from_cons.push_back(conscc);
+    classes_from_cons[atd_cons->name] = conscc;
   }
 }
 
 void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
                 map<string, CppClass *> &classes_from_type,
-                vector<CppClass *> &classes_from_cons){
+                map<string, CppClass *> &classes_from_cons){
   string cname = CONVERT_TYPENAME(rtd->name);
   CppClass *tycc = new CppClass();
   tycc->name = cname;
@@ -413,7 +414,7 @@ void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
 
 void convertTypeDec(Scheme *scheme, TypeDec *td, 
                 map<string, CppClass *> &classes_from_type, 
-                vector<CppClass *> &classes_from_cons){
+                map<string, CppClass *> &classes_from_cons){
   if(classes_from_type.find(td->name) != classes_from_type.end())
     return;
   if(InductiveTypeDec *itd = dynamic_cast<InductiveTypeDec *>(td)){
@@ -423,12 +424,12 @@ void convertTypeDec(Scheme *scheme, TypeDec *td,
   }
 }
 
-void convert(Scheme *scm, const char *cppout, const char *hppout){
+void convert(Scheme *scm, const char *cppout, const char *hppout, vector<string> *printlist){
   ofstream cppfout(cppout);
   ofstream hppfout(hppout);
 
   map<string, CppClass *> classes_from_type;
-  vector<CppClass *> classes_from_cons;
+  map<string, CppClass *> classes_from_cons;
 
   for(auto itr = scm->decs.begin(); itr != scm->decs.end(); itr++){
     convertTypeDec(scm, itr->second, classes_from_type, classes_from_cons);
@@ -437,15 +438,19 @@ void convert(Scheme *scm, const char *cppout, const char *hppout){
   PrintConfig pc;
   pc.indentsize = 2;
   for(auto itr = classes_from_type.begin(); itr != classes_from_type.end(); itr++){
+    if(printlist && printlist->end() == std::find(printlist->begin(), printlist->end(), itr->second->name))
+      continue;
     (itr->second)->printDec(hppfout, 0, &pc);
     hppfout << endl << endl;
     int printedelems = (itr->second)->printDef(cppfout, 0, &pc);
     if(printedelems) cppfout << endl;
   }
   for(auto itr = classes_from_cons.begin(); itr != classes_from_cons.end(); itr++){
-    (*itr)->printDec(hppfout, 0, &pc);
+    if(printlist && printlist->end() == std::find(printlist->begin(), printlist->end(), itr->second->name))
+      continue;
+    (itr->second)->printDec(hppfout, 0, &pc);
     hppfout << endl << endl;
-    int printedelems = (*itr)->printDef(cppfout, 0, &pc);
+    int printedelems = (itr->second)->printDef(cppfout, 0, &pc);
     if(printedelems) cppfout << endl;
   }
 
