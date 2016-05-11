@@ -13,6 +13,24 @@ public :
   virtual void serialize(cereal::JSONOutputArchive& archive) const = 0;
 };
 
+struct ConsB : public TyA{
+public : 
+  ConsB(std::shared_ptr<TyB> _b);
+  void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  std::shared_ptr<TyB> b;
+};
+
+struct ConsC : public TyB{
+public : 
+  ConsC(std::shared_ptr<TyC> _c);
+  void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  std::shared_ptr<TyC> c;
+};
+
 struct ConsD : public TyC{
 public : 
   ConsD();
@@ -29,23 +47,5 @@ struct ConsF : public TyC{
 public : 
   ConsF();
   void serialize(cereal::JSONOutputArchive& archive) const;
-};
-
-struct ConsC : public TyB{
-public : 
-  ConsC(std::shared_ptr<TyC> _c);
-  void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyC> c;
-};
-
-struct ConsB : public TyA{
-public : 
-  ConsB(std::shared_ptr<TyB> _b);
-  void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyB> b;
 };
 

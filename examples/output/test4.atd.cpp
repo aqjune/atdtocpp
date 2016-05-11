@@ -54,62 +54,74 @@ void TyTransitivityPointerLhs::serialize(cereal::JSONOutputArchive& archive) con
   archive(CEREAL_NVP(loadq));
 }
 
-ConsPhysical::ConsPhysical(){
+ConsAddAssociative::ConsAddAssociative(std::shared_ptr<TyAddAssociative> _add_associative) : add_associative(_add_associative){
 }
-void ConsPhysical::serialize(cereal::JSONOutputArchive& archive) const{
+std::shared_ptr<TyInfrule> ConsAddAssociative::make(std::shared_ptr<TyRegister> _x, std::shared_ptr<TyRegister> _y, std::shared_ptr<TyRegister> _z, std::shared_ptr<TyConstInt> _c1, std::shared_ptr<TyConstInt> _c2, std::shared_ptr<TyConstInt> _c3, std::shared_ptr<TySize> _sz){
+  std::shared_ptr<TyAddAssociative> _val(new TyAddAssociative(_x, _y, _z, _c1, _c2, _c3, _sz));
+  return std::shared_ptr<TyInfrule>(new ConsAddAssociative(_val));
+}
+void ConsAddAssociative::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("Physical");
+  archive.saveValue("AddAssociative");
+  archive(CEREAL_NVP(add_associative));
 }
 
-ConsPrevious::ConsPrevious(){
+ConsCommand::ConsCommand(std::shared_ptr<TyPositionCommand> _position_command) : position_command(_position_command){
 }
-void ConsPrevious::serialize(cereal::JSONOutputArchive& archive) const{
+std::shared_ptr<TyPosition> ConsCommand::make(std::shared_ptr<TyScope> _scope, std::string _register_name){
+  std::shared_ptr<TyPositionCommand> _val(new TyPositionCommand(_scope, _register_name));
+  return std::shared_ptr<TyPosition>(new ConsCommand(_val));
+}
+void ConsCommand::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("Previous");
+  archive.saveValue("Command");
+  archive(CEREAL_NVP(position_command));
 }
 
-ConsGhost::ConsGhost(){
+ConsConst::ConsConst(std::shared_ptr<TyConstant> _constant) : constant(_constant){
 }
-void ConsGhost::serialize(cereal::JSONOutputArchive& archive) const{
+void ConsConst::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("Ghost");
+  archive.saveValue("Const");
+  archive(CEREAL_NVP(constant));
 }
 
-ConsIntType::ConsIntType(int _i) : i(_i){
+ConsConstFloat::ConsConstFloat(std::shared_ptr<TyConstFloat> _const_float) : const_float(_const_float){
 }
-void ConsIntType::serialize(cereal::JSONOutputArchive& archive) const{
+std::shared_ptr<TyConstant> ConsConstFloat::make(double _float_value, std::shared_ptr<TyFloatType> _float_type){
+  std::shared_ptr<TyConstFloat> _val(new TyConstFloat(_float_value, _float_type));
+  return std::shared_ptr<TyConstant>(new ConsConstFloat(_val));
+}
+void ConsConstFloat::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("IntType");
-  archive(CEREAL_NVP(i));
+  archive.saveValue("ConstFloat");
+  archive(CEREAL_NVP(const_float));
 }
 
-ConsSize::ConsSize(int _i) : i(_i){
+ConsConstInt::ConsConstInt(std::shared_ptr<TyConstInt> _const_int) : const_int(_const_int){
 }
-void ConsSize::serialize(cereal::JSONOutputArchive& archive) const{
+std::shared_ptr<TyConstant> ConsConstInt::make(int _int_value, std::shared_ptr<TyIntType> _int_type){
+  std::shared_ptr<TyConstInt> _val(new TyConstInt(_int_value, _int_type));
+  return std::shared_ptr<TyConstant>(new ConsConstInt(_val));
+}
+void ConsConstInt::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("Size");
-  archive(CEREAL_NVP(i));
+  archive.saveValue("ConstInt");
+  archive(CEREAL_NVP(const_int));
 }
 
-ConsHalfType::ConsHalfType(){
+ConsConstVal::ConsConstVal(std::shared_ptr<TyConstant> _constant) : constant(_constant){
 }
-void ConsHalfType::serialize(cereal::JSONOutputArchive& archive) const{
+void ConsConstVal::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("HalfType");
-}
-
-ConsFloatType::ConsFloatType(){
-}
-void ConsFloatType::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("FloatType");
+  archive.saveValue("ConstVal");
+  archive(CEREAL_NVP(constant));
 }
 
 ConsDoubleType::ConsDoubleType(){
@@ -128,6 +140,52 @@ void ConsFP128Type::serialize(cereal::JSONOutputArchive& archive) const{
   archive.saveValue("FP128Type");
 }
 
+ConsFloatType::ConsFloatType(){
+}
+void ConsFloatType::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("FloatType");
+}
+
+ConsGhost::ConsGhost(){
+}
+void ConsGhost::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("Ghost");
+}
+
+ConsHalfType::ConsHalfType(){
+}
+void ConsHalfType::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("HalfType");
+}
+
+ConsId::ConsId(std::shared_ptr<TyRegister> _register) : register(_register){
+}
+std::shared_ptr<TyValue> ConsId::make(std::string _name, std::shared_ptr<TyTag> _tag){
+  std::shared_ptr<TyRegister> _val(new TyRegister(_name, _tag));
+  return std::shared_ptr<TyValue>(new ConsId(_val));
+}
+void ConsId::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("Id");
+  archive(CEREAL_NVP(register));
+}
+
+ConsIntType::ConsIntType(int _i) : i(_i){
+}
+void ConsIntType::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("IntType");
+  archive(CEREAL_NVP(i));
+}
+
 ConsPPCFP128Type::ConsPPCFP128Type(){
 }
 void ConsPPCFP128Type::serialize(cereal::JSONOutputArchive& archive) const{
@@ -136,51 +194,55 @@ void ConsPPCFP128Type::serialize(cereal::JSONOutputArchive& archive) const{
   archive.saveValue("PPC_FP128Type");
 }
 
-ConsX86FP80Type::ConsX86FP80Type(){
+ConsPhinode::ConsPhinode(std::shared_ptr<TyPositionPhinode> _position_phinode) : position_phinode(_position_phinode){
 }
-void ConsX86FP80Type::serialize(cereal::JSONOutputArchive& archive) const{
+std::shared_ptr<TyPosition> ConsPhinode::make(std::string _block_name, std::string _prev_block_name){
+  std::shared_ptr<TyPositionPhinode> _val(new TyPositionPhinode(_block_name, _prev_block_name));
+  return std::shared_ptr<TyPosition>(new ConsPhinode(_val));
+}
+void ConsPhinode::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("X86_FP80Type");
+  archive.saveValue("Phinode");
+  archive(CEREAL_NVP(position_phinode));
 }
 
-ConsConstInt::ConsConstInt(std::shared_ptr<TyConstInt> _const_int) : const_int(_const_int){
+ConsPhysical::ConsPhysical(){
 }
-std::shared_ptr<TyConstant> ConsConstInt::make(int _int_value, std::shared_ptr<TyIntType> _int_type){
-  std::shared_ptr<TyConstInt> _val(new TyConstInt(_int_value, _int_type));
-  return std::shared_ptr<TyConstant>(new ConsConstInt(_val));
-}
-void ConsConstInt::serialize(cereal::JSONOutputArchive& archive) const{
+void ConsPhysical::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("ConstInt");
-  archive(CEREAL_NVP(const_int));
+  archive.saveValue("Physical");
 }
 
-ConsConstFloat::ConsConstFloat(std::shared_ptr<TyConstFloat> _const_float) : const_float(_const_float){
+ConsPrevious::ConsPrevious(){
 }
-std::shared_ptr<TyConstant> ConsConstFloat::make(double _float_value, std::shared_ptr<TyFloatType> _float_type){
-  std::shared_ptr<TyConstFloat> _val(new TyConstFloat(_float_value, _float_type));
-  return std::shared_ptr<TyConstant>(new ConsConstFloat(_val));
-}
-void ConsConstFloat::serialize(cereal::JSONOutputArchive& archive) const{
+void ConsPrevious::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("ConstFloat");
-  archive(CEREAL_NVP(const_float));
+  archive.saveValue("Previous");
 }
 
-ConsVar::ConsVar(std::shared_ptr<TyRegister> _register) : register(_register){
+ConsRhs::ConsRhs(std::shared_ptr<TyRegister> _register, std::shared_ptr<TyScope> _scope) : register(_register), scope(_scope){
 }
-std::shared_ptr<TyExpr> ConsVar::make(std::string _name, std::shared_ptr<TyTag> _tag){
-  std::shared_ptr<TyRegister> _val(new TyRegister(_name, _tag));
-  return std::shared_ptr<TyExpr>(new ConsVar(_val));
-}
-void ConsVar::serialize(cereal::JSONOutputArchive& archive) const{
+void ConsRhs::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("Var");
+  archive.saveValue("Rhs");
+  archive.startNode();
+  archive.makeArray();
   archive(CEREAL_NVP(register));
+  archive(CEREAL_NVP(scope));
+  archive.finishNode();
+}
+
+ConsSize::ConsSize(int _i) : i(_i){
+}
+void ConsSize::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("Size");
+  archive(CEREAL_NVP(i));
 }
 
 ConsSource::ConsSource(){
@@ -199,63 +261,6 @@ void ConsTarget::serialize(cereal::JSONOutputArchive& archive) const{
   archive.saveValue("Target");
 }
 
-ConsRhs::ConsRhs(std::shared_ptr<TyRegister> _register, std::shared_ptr<TyScope> _scope) : register(_register), scope(_scope){
-}
-void ConsRhs::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("Rhs");
-  archive.startNode();
-  archive.makeArray();
-  archive(CEREAL_NVP(register));
-  archive(CEREAL_NVP(scope));
-  archive.finishNode();
-}
-
-ConsConst::ConsConst(std::shared_ptr<TyConstant> _constant) : constant(_constant){
-}
-void ConsConst::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("Const");
-  archive(CEREAL_NVP(constant));
-}
-
-ConsAddAssociative::ConsAddAssociative(std::shared_ptr<TyAddAssociative> _add_associative) : add_associative(_add_associative){
-}
-std::shared_ptr<TyInfrule> ConsAddAssociative::make(std::shared_ptr<TyRegister> _x, std::shared_ptr<TyRegister> _y, std::shared_ptr<TyRegister> _z, std::shared_ptr<TyConstInt> _c1, std::shared_ptr<TyConstInt> _c2, std::shared_ptr<TyConstInt> _c3, std::shared_ptr<TySize> _sz){
-  std::shared_ptr<TyAddAssociative> _val(new TyAddAssociative(_x, _y, _z, _c1, _c2, _c3, _sz));
-  return std::shared_ptr<TyInfrule>(new ConsAddAssociative(_val));
-}
-void ConsAddAssociative::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("AddAssociative");
-  archive(CEREAL_NVP(add_associative));
-}
-
-ConsId::ConsId(std::shared_ptr<TyRegister> _register) : register(_register){
-}
-std::shared_ptr<TyValue> ConsId::make(std::string _name, std::shared_ptr<TyTag> _tag){
-  std::shared_ptr<TyRegister> _val(new TyRegister(_name, _tag));
-  return std::shared_ptr<TyValue>(new ConsId(_val));
-}
-void ConsId::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("Id");
-  archive(CEREAL_NVP(register));
-}
-
-ConsConstVal::ConsConstVal(std::shared_ptr<TyConstant> _constant) : constant(_constant){
-}
-void ConsConstVal::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("ConstVal");
-  archive(CEREAL_NVP(constant));
-}
-
 ConsTransitivityPointersLhs::ConsTransitivityPointersLhs(std::shared_ptr<TyTransitivityPointerLhs> _transitivity_pointer_lhs) : transitivity_pointer_lhs(_transitivity_pointer_lhs){
 }
 std::shared_ptr<TyInfrule> ConsTransitivityPointersLhs::make(std::shared_ptr<TyValue> _p, std::shared_ptr<TyValue> _q, std::shared_ptr<TyValue> _v, std::shared_ptr<TyExpr> _loadq){
@@ -269,29 +274,24 @@ void ConsTransitivityPointersLhs::serialize(cereal::JSONOutputArchive& archive) 
   archive(CEREAL_NVP(transitivity_pointer_lhs));
 }
 
-ConsPhinode::ConsPhinode(std::shared_ptr<TyPositionPhinode> _position_phinode) : position_phinode(_position_phinode){
+ConsVar::ConsVar(std::shared_ptr<TyRegister> _register) : register(_register){
 }
-std::shared_ptr<TyPosition> ConsPhinode::make(std::string _block_name, std::string _prev_block_name){
-  std::shared_ptr<TyPositionPhinode> _val(new TyPositionPhinode(_block_name, _prev_block_name));
-  return std::shared_ptr<TyPosition>(new ConsPhinode(_val));
+std::shared_ptr<TyExpr> ConsVar::make(std::string _name, std::shared_ptr<TyTag> _tag){
+  std::shared_ptr<TyRegister> _val(new TyRegister(_name, _tag));
+  return std::shared_ptr<TyExpr>(new ConsVar(_val));
 }
-void ConsPhinode::serialize(cereal::JSONOutputArchive& archive) const{
+void ConsVar::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("Phinode");
-  archive(CEREAL_NVP(position_phinode));
+  archive.saveValue("Var");
+  archive(CEREAL_NVP(register));
 }
 
-ConsCommand::ConsCommand(std::shared_ptr<TyPositionCommand> _position_command) : position_command(_position_command){
+ConsX86FP80Type::ConsX86FP80Type(){
 }
-std::shared_ptr<TyPosition> ConsCommand::make(std::shared_ptr<TyScope> _scope, std::string _register_name){
-  std::shared_ptr<TyPositionCommand> _val(new TyPositionCommand(_scope, _register_name));
-  return std::shared_ptr<TyPosition>(new ConsCommand(_val));
-}
-void ConsCommand::serialize(cereal::JSONOutputArchive& archive) const{
+void ConsX86FP80Type::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
-  archive.saveValue("Command");
-  archive(CEREAL_NVP(position_command));
+  archive.saveValue("X86_FP80Type");
 }
 

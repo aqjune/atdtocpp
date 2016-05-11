@@ -125,7 +125,7 @@ RecordTypeDec *createAtdTypeDec(CoqInfrule *itr, map<string, string> &coqtyToAtd
       throw convert_exception(p.second);
     }
     Field *f = new Field();
-    f->name = p.first;
+    f->name = replacePrimes(p.first);
     f->type = new NamedType(coqtyToAtdty[p.second]);
     dec->fields.push_back(f);
   }

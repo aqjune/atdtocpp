@@ -5,6 +5,15 @@ void TyC::serialize(cereal::JSONOutputArchive& archive) const{
   archive(CEREAL_NVP(y));
 }
 
+ConsB::ConsB(std::shared_ptr<TyB> _b) : b(_b){
+}
+void ConsB::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("B");
+  archive(CEREAL_NVP(b));
+}
+
 ConsC::ConsC(std::shared_ptr<TyC> _c) : c(_c){
 }
 std::shared_ptr<TyB> ConsC::make(int _x, int _y){
@@ -16,14 +25,5 @@ void ConsC::serialize(cereal::JSONOutputArchive& archive) const{
   archive.writeName();
   archive.saveValue("C");
   archive(CEREAL_NVP(c));
-}
-
-ConsB::ConsB(std::shared_ptr<TyB> _b) : b(_b){
-}
-void ConsB::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("B");
-  archive(CEREAL_NVP(b));
 }
 

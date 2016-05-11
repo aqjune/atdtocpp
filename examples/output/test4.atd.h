@@ -125,52 +125,62 @@ public :
   virtual void serialize(cereal::JSONOutputArchive& archive) const = 0;
 };
 
-struct ConsPhysical : public TyTag{
+struct ConsAddAssociative : public TyInfrule{
 public : 
-  ConsPhysical();
-  void serialize(cereal::JSONOutputArchive& archive) const;
-};
-
-struct ConsPrevious : public TyTag{
-public : 
-  ConsPrevious();
-  void serialize(cereal::JSONOutputArchive& archive) const;
-};
-
-struct ConsGhost : public TyTag{
-public : 
-  ConsGhost();
-  void serialize(cereal::JSONOutputArchive& archive) const;
-};
-
-struct ConsIntType : public TyIntType{
-public : 
-  ConsIntType(int _i);
+  ConsAddAssociative(std::shared_ptr<TyAddAssociative> _add_associative);
+  static std::shared_ptr<TyInfrule> make(std::shared_ptr<TyRegister> _x, std::shared_ptr<TyRegister> _y, std::shared_ptr<TyRegister> _z, std::shared_ptr<TyConstInt> _c1, std::shared_ptr<TyConstInt> _c2, std::shared_ptr<TyConstInt> _c3, std::shared_ptr<TySize> _sz);
   void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
-  int i;
+  std::shared_ptr<TyAddAssociative> add_associative;
 };
 
-struct ConsSize : public TySize{
+struct ConsCommand : public TyPosition{
 public : 
-  ConsSize(int _i);
+  ConsCommand(std::shared_ptr<TyPositionCommand> _position_command);
+  static std::shared_ptr<TyPosition> make(std::shared_ptr<TyScope> _scope, std::string _register_name);
   void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
-  int i;
+  std::shared_ptr<TyPositionCommand> position_command;
 };
 
-struct ConsHalfType : public TyFloatType{
+struct ConsConst : public TyExpr{
 public : 
-  ConsHalfType();
+  ConsConst(std::shared_ptr<TyConstant> _constant);
   void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  std::shared_ptr<TyConstant> constant;
 };
 
-struct ConsFloatType : public TyFloatType{
+struct ConsConstFloat : public TyConstant{
 public : 
-  ConsFloatType();
+  ConsConstFloat(std::shared_ptr<TyConstFloat> _const_float);
+  static std::shared_ptr<TyConstant> make(double _float_value, std::shared_ptr<TyFloatType> _float_type);
   void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  std::shared_ptr<TyConstFloat> const_float;
+};
+
+struct ConsConstInt : public TyConstant{
+public : 
+  ConsConstInt(std::shared_ptr<TyConstInt> _const_int);
+  static std::shared_ptr<TyConstant> make(int _int_value, std::shared_ptr<TyIntType> _int_type);
+  void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  std::shared_ptr<TyConstInt> const_int;
+};
+
+struct ConsConstVal : public TyValue{
+public : 
+  ConsConstVal(std::shared_ptr<TyConstant> _constant);
+  void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  std::shared_ptr<TyConstant> constant;
 };
 
 struct ConsDoubleType : public TyFloatType{
@@ -185,46 +195,88 @@ public :
   void serialize(cereal::JSONOutputArchive& archive) const;
 };
 
+struct ConsFloatType : public TyFloatType{
+public : 
+  ConsFloatType();
+  void serialize(cereal::JSONOutputArchive& archive) const;
+};
+
+struct ConsGhost : public TyTag{
+public : 
+  ConsGhost();
+  void serialize(cereal::JSONOutputArchive& archive) const;
+};
+
+struct ConsHalfType : public TyFloatType{
+public : 
+  ConsHalfType();
+  void serialize(cereal::JSONOutputArchive& archive) const;
+};
+
+struct ConsId : public TyValue{
+public : 
+  ConsId(std::shared_ptr<TyRegister> _register);
+  static std::shared_ptr<TyValue> make(std::string _name, std::shared_ptr<TyTag> _tag);
+  void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  std::shared_ptr<TyRegister> register;
+};
+
+struct ConsIntType : public TyIntType{
+public : 
+  ConsIntType(int _i);
+  void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  int i;
+};
+
 struct ConsPPCFP128Type : public TyFloatType{
 public : 
   ConsPPCFP128Type();
   void serialize(cereal::JSONOutputArchive& archive) const;
 };
 
-struct ConsX86FP80Type : public TyFloatType{
+struct ConsPhinode : public TyPosition{
 public : 
-  ConsX86FP80Type();
-  void serialize(cereal::JSONOutputArchive& archive) const;
-};
-
-struct ConsConstInt : public TyConstant{
-public : 
-  ConsConstInt(std::shared_ptr<TyConstInt> _const_int);
-  static std::shared_ptr<TyConstant> make(int _int_value, std::shared_ptr<TyIntType> _int_type);
+  ConsPhinode(std::shared_ptr<TyPositionPhinode> _position_phinode);
+  static std::shared_ptr<TyPosition> make(std::string _block_name, std::string _prev_block_name);
   void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
-  std::shared_ptr<TyConstInt> const_int;
+  std::shared_ptr<TyPositionPhinode> position_phinode;
 };
 
-struct ConsConstFloat : public TyConstant{
+struct ConsPhysical : public TyTag{
 public : 
-  ConsConstFloat(std::shared_ptr<TyConstFloat> _const_float);
-  static std::shared_ptr<TyConstant> make(double _float_value, std::shared_ptr<TyFloatType> _float_type);
+  ConsPhysical();
   void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyConstFloat> const_float;
 };
 
-struct ConsVar : public TyExpr{
+struct ConsPrevious : public TyTag{
 public : 
-  ConsVar(std::shared_ptr<TyRegister> _register);
-  static std::shared_ptr<TyExpr> make(std::string _name, std::shared_ptr<TyTag> _tag);
+  ConsPrevious();
+  void serialize(cereal::JSONOutputArchive& archive) const;
+};
+
+struct ConsRhs : public TyExpr{
+public : 
+  ConsRhs(std::shared_ptr<TyRegister> _register, std::shared_ptr<TyScope> _scope);
   void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
   std::shared_ptr<TyRegister> register;
+  std::shared_ptr<TyScope> scope;
+};
+
+struct ConsSize : public TySize{
+public : 
+  ConsSize(int _i);
+  void serialize(cereal::JSONOutputArchive& archive) const;
+
+private : 
+  int i;
 };
 
 struct ConsSource : public TyScope{
@@ -239,54 +291,6 @@ public :
   void serialize(cereal::JSONOutputArchive& archive) const;
 };
 
-struct ConsRhs : public TyExpr{
-public : 
-  ConsRhs(std::shared_ptr<TyRegister> _register, std::shared_ptr<TyScope> _scope);
-  void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyRegister> register;
-  std::shared_ptr<TyScope> scope;
-};
-
-struct ConsConst : public TyExpr{
-public : 
-  ConsConst(std::shared_ptr<TyConstant> _constant);
-  void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyConstant> constant;
-};
-
-struct ConsAddAssociative : public TyInfrule{
-public : 
-  ConsAddAssociative(std::shared_ptr<TyAddAssociative> _add_associative);
-  static std::shared_ptr<TyInfrule> make(std::shared_ptr<TyRegister> _x, std::shared_ptr<TyRegister> _y, std::shared_ptr<TyRegister> _z, std::shared_ptr<TyConstInt> _c1, std::shared_ptr<TyConstInt> _c2, std::shared_ptr<TyConstInt> _c3, std::shared_ptr<TySize> _sz);
-  void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyAddAssociative> add_associative;
-};
-
-struct ConsId : public TyValue{
-public : 
-  ConsId(std::shared_ptr<TyRegister> _register);
-  static std::shared_ptr<TyValue> make(std::string _name, std::shared_ptr<TyTag> _tag);
-  void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyRegister> register;
-};
-
-struct ConsConstVal : public TyValue{
-public : 
-  ConsConstVal(std::shared_ptr<TyConstant> _constant);
-  void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyConstant> constant;
-};
-
 struct ConsTransitivityPointersLhs : public TyInfrule{
 public : 
   ConsTransitivityPointersLhs(std::shared_ptr<TyTransitivityPointerLhs> _transitivity_pointer_lhs);
@@ -297,23 +301,19 @@ private :
   std::shared_ptr<TyTransitivityPointerLhs> transitivity_pointer_lhs;
 };
 
-struct ConsPhinode : public TyPosition{
+struct ConsVar : public TyExpr{
 public : 
-  ConsPhinode(std::shared_ptr<TyPositionPhinode> _position_phinode);
-  static std::shared_ptr<TyPosition> make(std::string _block_name, std::string _prev_block_name);
+  ConsVar(std::shared_ptr<TyRegister> _register);
+  static std::shared_ptr<TyExpr> make(std::string _name, std::shared_ptr<TyTag> _tag);
   void serialize(cereal::JSONOutputArchive& archive) const;
 
 private : 
-  std::shared_ptr<TyPositionPhinode> position_phinode;
+  std::shared_ptr<TyRegister> register;
 };
 
-struct ConsCommand : public TyPosition{
+struct ConsX86FP80Type : public TyFloatType{
 public : 
-  ConsCommand(std::shared_ptr<TyPositionCommand> _position_command);
-  static std::shared_ptr<TyPosition> make(std::shared_ptr<TyScope> _scope, std::string _register_name);
+  ConsX86FP80Type();
   void serialize(cereal::JSONOutputArchive& archive) const;
-
-private : 
-  std::shared_ptr<TyPositionCommand> position_command;
 };
 

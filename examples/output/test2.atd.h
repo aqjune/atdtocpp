@@ -3,18 +3,6 @@ public :
   virtual void serialize(cereal::JSONOutputArchive& archive) const = 0;
 };
 
-struct ConsHalfType : public TyFloatType{
-public : 
-  ConsHalfType();
-  void serialize(cereal::JSONOutputArchive& archive) const;
-};
-
-struct ConsFloatType : public TyFloatType{
-public : 
-  ConsFloatType();
-  void serialize(cereal::JSONOutputArchive& archive) const;
-};
-
 struct ConsDoubleType : public TyFloatType{
 public : 
   ConsDoubleType();
@@ -24,6 +12,18 @@ public :
 struct ConsFP128Type : public TyFloatType{
 public : 
   ConsFP128Type();
+  void serialize(cereal::JSONOutputArchive& archive) const;
+};
+
+struct ConsFloatType : public TyFloatType{
+public : 
+  ConsFloatType();
+  void serialize(cereal::JSONOutputArchive& archive) const;
+};
+
+struct ConsHalfType : public TyFloatType{
+public : 
+  ConsHalfType();
   void serialize(cereal::JSONOutputArchive& archive) const;
 };
 

@@ -1,19 +1,3 @@
-ConsHalfType::ConsHalfType(){
-}
-void ConsHalfType::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("HalfType");
-}
-
-ConsFloatType::ConsFloatType(){
-}
-void ConsFloatType::serialize(cereal::JSONOutputArchive& archive) const{
-  archive.makeArray();
-  archive.writeName();
-  archive.saveValue("FloatType");
-}
-
 ConsDoubleType::ConsDoubleType(){
 }
 void ConsDoubleType::serialize(cereal::JSONOutputArchive& archive) const{
@@ -28,6 +12,22 @@ void ConsFP128Type::serialize(cereal::JSONOutputArchive& archive) const{
   archive.makeArray();
   archive.writeName();
   archive.saveValue("FP128Type");
+}
+
+ConsFloatType::ConsFloatType(){
+}
+void ConsFloatType::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("FloatType");
+}
+
+ConsHalfType::ConsHalfType(){
+}
+void ConsHalfType::serialize(cereal::JSONOutputArchive& archive) const{
+  archive.makeArray();
+  archive.writeName();
+  archive.saveValue("HalfType");
 }
 
 ConsPPCFP128Type::ConsPPCFP128Type(){

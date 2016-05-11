@@ -153,7 +153,7 @@ static string applyMoveFunction(const string &val){
 
 static void emitError(Type *t){
   cerr << "ERROR : we do not support conversion of this type : ";
-  t->print();
+  t->print(cerr, &PrintConfig::DEFAULT_PRINT_CONFIG);
   cerr << endl;
   assert(false);
 }
@@ -351,7 +351,7 @@ void convertTypesRecursively(Scheme *scheme, Type *t, map<string, CppClass *> &c
   if(NamedType *nt = dynamic_cast<NamedType *>(t)){
     if(nt->isReservedKeyword()) return;
     assert(scheme->decs.find(nt->name) != scheme->decs.end());
-    cout << "convertTypesRecursively : calling convertTypeDec(" << nt->name << ").." << endl;
+    //cout << "convertTypesRecursively : calling convertTypeDec(" << nt->name << ").." << endl;
     convertTypeDec(scheme, scheme->decs[nt->name], classes_from_type, classes_from_cons);
   }else if(ProdType *pt = dynamic_cast<ProdType *>(t)){
     for(int i = 0; i < pt->children.size(); i++){
@@ -370,7 +370,7 @@ void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd,
   tycc->name = cname;
   tycc->methods.push_back(newVirtualSerializeMethod(tycc));
   classes_from_type[itd->name] = tycc;
-  cout << "Converting " << itd->name << " to " << cname << ".." << endl;
+  //cout << "Converting " << itd->name << " to " << cname << ".." << endl;
   
   for(auto itr = itd->cons.begin(); itr != itd->cons.end(); itr++){
     Constructor *atd_cons = *itr;
@@ -401,7 +401,7 @@ void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
   CppClass *tycc = new CppClass();
   tycc->name = cname;
   classes_from_type[rtd->name] = tycc;
-  cout << "Converting " << rtd->name << " to " << cname << ".." << endl;
+  //cout << "Converting " << rtd->name << " to " << cname << ".." << endl;
   
   for(int i = 0; i < rtd->fields.size(); i++)
     convertTypesRecursively(scheme, rtd->fields[i]->type, classes_from_type, classes_from_cons);
