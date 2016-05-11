@@ -4,12 +4,8 @@
 #include<string>
 #include<vector>
 #include<iostream>
+#include"printer.h"
 using namespace std;
-
-class PrintConfig{
-public:
-  int indentsize;
-};
 
 enum CppAccessModifier{
   PUBLIC, PROTECTED, PRIVATE

@@ -5,6 +5,7 @@
 #include<map>
 #include<string>
 #include<iostream>
+#include"printer.h"
 using namespace std;
 
 
@@ -25,7 +26,7 @@ public:
     }
     return t;
   }*/
-  virtual void print() = 0;
+  virtual void print(ostream &out, PrintConfig *cfg) = 0;
 };
 
 class NamedType : public Type{
@@ -38,8 +39,8 @@ public:
     return name == "string" || name == "list" || name == "int" || name == "float" || name == "bool";
   }
 
-  virtual void print(){
-    cout << name;
+  virtual void print(ostream &out, PrintConfig *cfg){
+    out << name;
   }
 };
 
@@ -49,14 +50,14 @@ public:
   void addChild(Type *t){
     children.push_back(t);
   }
-  virtual void print(){
-    cout << "(";
-    children[0]->print();
+  virtual void print(ostream &out, PrintConfig *cfg){
+    out << "(";
+    children[0]->print(out, cfg);
     for(int i = 1; i < children.size(); i++){
-      cout << ",";
-      children[i]->print();
+      out << " * ";
+      children[i]->print(out, cfg);
     }
-    cout << ")";
+    out << ")";
   }
 };
 
@@ -64,10 +65,10 @@ class ParameterizedType : public Type{
 public:
   Type *arg;
   Type *ty;
-  virtual void print(){
-    arg->print();
-    cout << " ";
-    ty->print();
+  virtual void print(ostream &out, PrintConfig *cfg){
+    arg->print(out, cfg);
+    out << " ";
+    ty->print(out, cfg);
   }
 };
 
@@ -79,11 +80,11 @@ public:
     argtype = nullptr;
   }
 
-  void print(){
-    cout << name;
+  void print(ostream &out, PrintConfig *cfg){
+    out << name;
     if(argtype){
-      cout << " : ";
-      argtype->print();
+      out << " of ";
+      argtype->print(out, cfg);
     }
   }
 };
@@ -93,33 +94,40 @@ public:
   string name;
   Type *type;
 
-  void print(){
-    cout << name << " : ";
-    type->print();
+  void print(ostream &out, PrintConfig *cfg){
+    printIndentation(out, 1, cfg);
+    out << name << " : ";
+    type->print(out, cfg);
   }
 };
 
 class TypeDec{
 public:
   string name;
+  pair<int, int> srcBegin;
+  pair<int, int> srcEnd;
 
-  virtual void print() = 0;
+  virtual void print(ostream &out, PrintConfig *cfg) = 0;
 };
 
 class RecordTypeDec: public TypeDec{
 public:
   vector<Field *> fields;
+  void add(Field *f){
+    fields.push_back(f);
+  }
   void addAll(vector<Field *> *fp){
     fields = *fp;
   }
 
-  virtual void print(){
-    cout << "recordtype " << this->name << " = {" << endl;
+  virtual void print(ostream &out, PrintConfig *cfg){
+    out << "type " << this->name << " = {" << endl;
     for(int i = 0; i < fields.size(); i++){
-      fields[i]->print();
-      cout << ";" << endl;
+      printIndentation(out, 1, cfg);
+      fields[i]->print(out, cfg);
+      out << ";" << endl;
     }
-    cout << "}";
+    out << "}";
   }
 };
 
@@ -130,14 +138,16 @@ public:
     cons = *vp;
   }
 
-  virtual void print(){
-    cout << "inductivetype " << this->name << " = [" << endl;
+  virtual void print(ostream &out, PrintConfig *cfg){
+    out << "type " << this->name << " = [" << endl;
     for(int i = 0; i < cons.size(); i++){
-      cout << "| ";
-      cons[i]->print();
-      cout << endl;
+      printIndentation(out, 1, cfg);
+      out << "| ";
+      cons[i]->print(out, cfg);
+      out << endl;
     }
-    cout << "]";
+    printIndentation(out, 1, cfg);
+    out << "] <ocaml repr=\"classic\">";
   }
 };
 
@@ -148,9 +158,9 @@ public:
     decs[td->name] = td;
   }
 
-  void print(){
+  void print(ostream &out, PrintConfig *cfg){
     for(auto itr = decs.begin(); itr != decs.end(); itr++){
-      itr->second->print();
+      itr->second->print(out, cfg);
       cout << endl;
     }
   }

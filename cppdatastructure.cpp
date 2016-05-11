@@ -1,10 +1,5 @@
 #include "cppdatastructure.h"
 
-static void printIndentation(ostream &out, int ac, PrintConfig *config){
-  for(int i = 0; i < ac; i++)
-    for(int j = 0; j < config->indentsize; j++)
-      out << " ";
-}
 static void printAccessModifier(ostream &out, CppAccessModifier mod){
   switch(mod){
   case PUBLIC:
