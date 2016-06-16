@@ -134,7 +134,7 @@ RecordTypeDec *createAtdTypeDec(CoqInfrule *itr, map<string, string> &coqtyToAtd
 
 int main(int argc, char **argv){
   if(argc != 4){
-    cerr << "coqtoatd <input(Hints.v)> map.txt <output(.atd)>" << endl;
+    cerr << "coqtoatd <input(inference rules in coq)> map.txt <output(.atd)>" << endl;
     return -1;
   }
   

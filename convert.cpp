@@ -113,10 +113,15 @@ static CppMethod *newRecordTySerializeMethod(CppClass *parent){
   m->ispurevirtual = false;
   
   m->args.push_back(new CppVariable("cereal::JSONOutputArchive&", "archive"));
+  string archivecmd = "archive(";
 
   for(int i = 0; i < parent->fields.size(); i++){
-    m->instructions.push_back(string("archive(CEREAL_NVP(") + parent->fields[i]->name + "))");
+    if(i != 0)
+      archivecmd = archivecmd + ", ";
+    archivecmd = archivecmd + "CEREAL_NVP(" + parent->fields[i]->name + ")";
   }
+  archivecmd = archivecmd + ")";
+  m->instructions.push_back(archivecmd);
   return m;
 }
 

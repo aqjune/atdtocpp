@@ -30,7 +30,10 @@ int main(int argc, char** argv) {
     assert(argty);
 
     RecordTypeDec *itemdec = dynamic_cast<RecordTypeDec*>(root->decs[argty->name]);
-    assert(itemdec);
+    if(itemdec == nullptr){
+      cerr << argty->name << " does not exst" << endl;
+      assert(itemdec);
+    }
     fout << "  | CoreHint_t." << cons->name << " (args:CoreHint_t." << argty->name << ") -> " << endl;
 
     string args = "(";
