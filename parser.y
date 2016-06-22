@@ -193,7 +193,13 @@ atdtype:
         | atdtype TOK_PRODUCT atdtype
                                 { ProdType *td = new ProdType();
                                   td->addChild($1);
-                                  td->addChild($3);
+                                  if(ProdType *td_r = dynamic_cast<ProdType*>($3)){
+                                    for(auto itr = td_r->children.begin(); itr != td_r->children.end(); itr++){
+                                      td->addChild(*itr);
+                                    }
+                                    delete $3;
+                                  }else
+                                    td->addChild($3);
                                   MERGE_YYLLOC(@$, @1, @3);
                                   $$ = td; 
                                 }

@@ -181,7 +181,7 @@ vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForCons
     v.push_back(cf);
   }else if(ProdType *pt = dynamic_cast<ProdType *>(t)){
     for(int i = 0; i < pt->children.size(); i++){
-      if(!dynamic_cast<NamedType *>(pt->children[i])){
+      if(!dynamic_cast<NamedType *>(pt->children[i]) && !dynamic_cast<ParameterizedType *>(pt->children[i])){
         emitError(t);
       }
       v.push_back(newConsClassFields(pt->children[i], fieldsForConstructor, classes_from_type)[0]);
@@ -193,7 +193,7 @@ vector<CppField *> newConsClassFields(Type *t, vector<CppField *> &fieldsForCons
     }else if(pnd->name != "list"){
       emitError(t);
     }
-    v = newConsClassFields(pnd, fieldsForConstructor, classes_from_type);
+    v = newConsClassFields(pt->arg, fieldsForConstructor, classes_from_type);
     if(v.size() == 1){
       v[0]->type = toVector(v[0]->type->toString());
       v[0]->name = "vec_" + v[0]->name;
