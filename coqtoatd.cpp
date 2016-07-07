@@ -57,25 +57,35 @@ bool parseType(CoqInfrule *ir, string &s){
   auto itr = s.begin();
   itr++;
   
+  while(isspace(*itr)) itr++;
+
+  vector<string> names;
   string name = "";
   string type = "";
-  while(*itr != ':'){
-    name += *itr;
-    itr++;
+  while(true){
+    while(*itr != ':' && !isspace(*itr)){
+      name += *itr;
+      itr++;
+    }
+    names.push_back(name);
+    name = "";
+    while(isspace(*itr)) itr++;
+    if(*itr == ':') break;
   }
   assert(*itr == ':');
   itr++;
+  while(isspace(*itr)) itr++;
   while(*itr != ')'){
     type += *itr;
     itr++;
   }
   assert(*itr == ')');
-  name = trim(name);
   type = trim(type);
   itr++;
   s = s.substr(itr - s.begin());
   
-  ir->cons.push_back(make_pair(name, type));
+  for(size_t i = 0; i < names.size(); i++)
+    ir->cons.push_back(make_pair(names[i], type));
   return true;
 }
 
