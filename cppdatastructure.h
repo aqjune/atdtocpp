@@ -24,6 +24,8 @@ class CppClass;
 
 class CppType{
 public:
+  static bool IsVectorTy(CppType *ct);
+  static bool IsSharedPtrTy(CppType *ct);
   string name;
   vector<CppType *> templateArgs;
 

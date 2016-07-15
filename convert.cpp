@@ -10,6 +10,31 @@ using namespace std;
 
 #define CONVERT_TYPENAME(n) (string("Ty") + convertToCamelCase(n.c_str()))
 
+class ClassDecs {
+public:
+  map<string, CppClass *> classes_from_type; // ATD type definition -> C++ class
+  map<string, CppClass *> classes_from_cons; // ATD constructor -> C++ class
+  map<string, InductiveTypeDec *> inductive_decs;
+  map<string, RecordTypeDec *> record_decs;
+
+  InductiveTypeDec *getIndTyDecFromCppClass(string cppclassname){
+    bool found = false;
+    std::string indtyname = "";
+    for(auto itr = classes_from_type.begin(); itr != classes_from_type.end(); itr++){
+      if(itr->second->name == cppclassname){
+        indtyname = itr->first;
+        found = true;
+        break;
+      }
+    }
+    if(!found)
+      return nullptr;
+    if(inductive_decs.find(indtyname) == inductive_decs.end())
+      return nullptr;
+    return inductive_decs[indtyname];
+  }
+};
+
 static string convertPrime(const char *c){
   vector<char> ss;
   const char *p = c;
@@ -72,7 +97,7 @@ static CppMethod *newVirtualSerializeMethod(CppClass *parent){
   return m;
 }
 
-static CppMethod *newInductiveConsSerializeMethod(CppClass *parent, string cons_name){
+static CppMethod *newInductiveConsSerializeMethod(CppClass *parent, string cons_name, ClassDecs &cdecs){
   CppMethod *m = new CppMethod();
   m->accmod = PUBLIC;
   m->parentClass = parent;
@@ -81,24 +106,69 @@ static CppMethod *newInductiveConsSerializeMethod(CppClass *parent, string cons_
   m->returnType = "void";
   m->name = "serialize";
   m->ispurevirtual = false;
-  
+
+#define ADDINST(str) m->instructions.push_back(str)
   m->args.push_back(new CppVariable("cereal::JSONOutputArchive&", "archive"));
-  m->instructions.push_back("archive.makeArray()");
-  m->instructions.push_back("archive.writeName()");
-  m->instructions.push_back(string("archive.saveValue(\"") + cons_name + "\")");
+  ADDINST("archive.makeArray();");
+  ADDINST("archive.writeName();");
+  ADDINST(string("archive.saveValue(\"") + cons_name + "\");");
   
   if(parent->fields.size() == 0){
     // do nothing!
-  }else if(parent->fields.size() == 1){
-    m->instructions.push_back(string("archive(CEREAL_NVP(") + parent->fields[0]->name + "))");
-  }else{
-    m->instructions.push_back("archive.startNode()");
-    m->instructions.push_back("archive.makeArray()");
-    for(int i = 0; i < parent->fields.size(); i++){
-      m->instructions.push_back(string("archive(CEREAL_NVP(") + parent->fields[i]->name + "))");
+  }else{ 
+    if(parent->fields.size() > 1){
+      ADDINST("archive.startNode();");
+      ADDINST("archive.makeArray();");
     }
-    m->instructions.push_back("archive.finishNode()");
+    for(int i = 0; i < parent->fields.size(); i++){
+      string fieldname = parent->fields[i]->name;
+      CppType *fty = parent->fields[i]->type;
+      string ftyname = fty->name;
+      InductiveTypeDec *itdec;
+      if(CppType::IsSharedPtrTy(fty) &&
+          (itdec = cdecs.getIndTyDecFromCppClass(fty->templateArgs[0]->name))){
+        vector<Constructor *> consWithNoArg;
+        for(auto itr = itdec->cons.begin(); itr != itdec->cons.end(); itr++){
+          if((*itr)->argtype == nullptr){
+            consWithNoArg.push_back(*itr);
+          }
+        }
+        if(consWithNoArg.empty())
+          ADDINST(string("archive(CEREAL_NVP(") + fieldname + "));");
+        else{
+          bool first = true;
+          for(auto itr = consWithNoArg.begin(); itr != consWithNoArg.end(); itr++){
+            string consname = (*itr)->name;
+            string cppclassname = cdecs.classes_from_cons[consname]->name;
+
+            string castingexpr = string("auto p = std::dynamic_pointer_cast<") + cppclassname + ">(" + fieldname + ")";
+            if(first){
+              ADDINST(string("if (" + castingexpr + ") {"));
+            }else{
+              ADDINST(string("} else if (" + castingexpr + ") {"));
+            }
+            ADDINST("  archive.writeName();");
+            ADDINST(string("  archive.saveValue(\"") + consname + "\");");
+            first = false;
+          }
+          ADDINST("} else {");
+          ADDINST(string("  archive(CEREAL_NVP(") + fieldname + "));");
+          ADDINST("}");
+        }
+      }else if(CppType::IsVectorTy(parent->fields[i]->type)){
+        ADDINST(string("archive.startNode();"));
+        ADDINST(string("archive.makeArray();"));
+        ADDINST(string("archive(CEREAL_NVP(") + fieldname + "));");
+        ADDINST(string("archive.finishNode();"));
+      }else{
+        ADDINST(string("archive(CEREAL_NVP(") + fieldname + "));");
+      }
+    }
+    if(parent->fields.size() > 1){
+      ADDINST("archive.finishNode()");
+    }
   }
+#undef ADDINST
   return m;
 }
 
@@ -120,7 +190,7 @@ static CppMethod *newRecordTySerializeMethod(CppClass *parent){
       archivecmd = archivecmd + ", ";
     archivecmd = archivecmd + "CEREAL_NVP(" + parent->fields[i]->name + ")";
   }
-  archivecmd = archivecmd + ")";
+  archivecmd = archivecmd + ");";
   m->instructions.push_back(archivecmd);
   return m;
 }
@@ -152,10 +222,6 @@ static CppType *toCppType(map<string, CppClass *> &classes_from_type, const stri
   return toSharedPtrType(classes_from_type[atdtype]->name);
 }
  
-static string applyMoveFunction(const string &val){
-  return string("std::move(") + val + ")";
-}
-
 static void emitError(Type *t){
   cerr << "ERROR : we do not support conversion of this type : ";
   t->print(cerr, &PrintConfig::DEFAULT_PRINT_CONFIG);
@@ -211,7 +277,7 @@ CppConstructor *newInductiveConsConstructor(CppClass *cclass, vector<CppField *>
   for(int i = 0; i < fieldsForConstructor.size(); i++){
     CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type->toString(), string("_") + fieldsForConstructor[i]->name);
     cc->args.push_back(vv);
-    cc->initializers.push_back(make_pair(fieldsForConstructor[i], /*applyMoveFunction(*/vv->name/*)*/));
+    cc->initializers.push_back(make_pair(fieldsForConstructor[i], vv->name));
   }
   return cc;
 }
@@ -221,7 +287,7 @@ CppConstructor *newRecordTyConstructor(CppClass *cclass, vector<CppField *> &fie
   for(int i = 0; i < fieldsForConstructor.size(); i++){
     CppVariable *vv = new CppVariable(fieldsForConstructor[i]->type->toString(), string("_") + fieldsForConstructor[i]->name);
     cc->args.push_back(vv);
-    cc->initializers.push_back(make_pair(fieldsForConstructor[i], /*applyMoveFunction(*/vv->name/*)*/));
+    cc->initializers.push_back(make_pair(fieldsForConstructor[i], vv->name));
   }
   return cc;
 }
@@ -330,10 +396,10 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
         instr = instr + ", ";
       instr = instr + /*applyMoveFunction(*/m->args[i]->name/*)*/;
     }
-    instr = instr + "))";
+    instr = instr + "));";
 
     string retinstr = string("return std::shared_ptr<") + consclass->parentname + ">(new "
-        + consclass->name + "(" + /*applyMoveFunction(*/"_val"/*)*/ + ")" + ")";
+        + consclass->name + "(" + /*applyMoveFunction(*/"_val"/*)*/ + ")" + ");";
     
     m->instructions.push_back(instr);
     m->instructions.push_back(retinstr);
@@ -345,36 +411,31 @@ CppMethod *newConsMakeMethod(CppClass *consclass, CppClass *tyclass, Constructor
 }
 
 
-void convertTypeDec(Scheme *scheme, TypeDec *td, 
-                map<string, CppClass *> &classes_from_type, 
-                map<string, CppClass *> &classes_from_cons);
+void convertTypeDec(Scheme *scheme, TypeDec *td, ClassDecs &cdecs);
 
 
 
-void convertTypesRecursively(Scheme *scheme, Type *t, map<string, CppClass *> &classes_from_type,
-                map<string, CppClass *> &classes_from_cons){
+void convertTypesRecursively(Scheme *scheme, Type *t, ClassDecs &cdecs){
   if(NamedType *nt = dynamic_cast<NamedType *>(t)){
     if(nt->isReservedKeyword()) return;
     assert(scheme->decs.find(nt->name) != scheme->decs.end());
     //cout << "convertTypesRecursively : calling convertTypeDec(" << nt->name << ").." << endl;
-    convertTypeDec(scheme, scheme->decs[nt->name], classes_from_type, classes_from_cons);
+    convertTypeDec(scheme, scheme->decs[nt->name], cdecs);
   }else if(ProdType *pt = dynamic_cast<ProdType *>(t)){
     for(int i = 0; i < pt->children.size(); i++){
-      convertTypesRecursively(scheme, pt->children[i], classes_from_type, classes_from_cons);
+      convertTypesRecursively(scheme, pt->children[i], cdecs);
     }
   }else if(ParameterizedType *pt = dynamic_cast<ParameterizedType *>(t)){
-    convertTypesRecursively(scheme, pt->arg, classes_from_type, classes_from_cons);
+    convertTypesRecursively(scheme, pt->arg, cdecs);
   }
 }
 
-void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd, 
-                map<string, CppClass *> &classes_from_type,
-                map<string, CppClass *> &classes_from_cons){
+void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd, ClassDecs &cdecs){
   string cname = CONVERT_TYPENAME(itd->name);
   CppClass *tycc = new CppClass();
   tycc->name = cname;
   tycc->methods.push_back(newVirtualSerializeMethod(tycc));
-  classes_from_type[itd->name] = tycc;
+  cdecs.classes_from_type[itd->name] = tycc;
   //cout << "Converting " << itd->name << " to " << cname << ".." << endl;
   
   for(auto itr = itd->cons.begin(); itr != itd->cons.end(); itr++){
@@ -386,63 +447,62 @@ void convertInductiveTypeDec(Scheme *scheme, InductiveTypeDec *itd,
     conscc->name = ccname;
     conscc->parentname = cname;
     
-    convertTypesRecursively(scheme, atd_cons->argtype, classes_from_type, classes_from_cons);
-    conscc->fields = newConsClassFields(atd_cons->argtype, fieldsForConstructor, classes_from_type);
+    convertTypesRecursively(scheme, atd_cons->argtype, cdecs);
+    conscc->fields = newConsClassFields(atd_cons->argtype, fieldsForConstructor, cdecs.classes_from_type);
     conscc->constructors.push_back(newInductiveConsConstructor(conscc, fieldsForConstructor));
 
-    if(CppMethod *makeMethod = newConsMakeMethod(conscc, tycc, atd_cons, scheme, fieldsForConstructor, classes_from_type)){
+    if(CppMethod *makeMethod = newConsMakeMethod(conscc, tycc, atd_cons, scheme, 
+        fieldsForConstructor, cdecs.classes_from_type)){
       conscc->methods.push_back(makeMethod);
     }
-    conscc->methods.push_back(newInductiveConsSerializeMethod(conscc, atd_cons->name));
+    conscc->methods.push_back(newInductiveConsSerializeMethod(conscc, atd_cons->name, cdecs));
     
-    classes_from_cons[atd_cons->name] = conscc;
+    cdecs.classes_from_cons[atd_cons->name] = conscc;
   }
 }
 
-void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd,
-                map<string, CppClass *> &classes_from_type,
-                map<string, CppClass *> &classes_from_cons){
+void convertRecordTypeDec(Scheme *scheme, RecordTypeDec *rtd, ClassDecs &cdecs){
   string cname = CONVERT_TYPENAME(rtd->name);
   CppClass *tycc = new CppClass();
   tycc->name = cname;
-  classes_from_type[rtd->name] = tycc;
+  cdecs.classes_from_type[rtd->name] = tycc;
   //cout << "Converting " << rtd->name << " to " << cname << ".." << endl;
   
   for(int i = 0; i < rtd->fields.size(); i++)
-    convertTypesRecursively(scheme, rtd->fields[i]->type, classes_from_type, classes_from_cons);
+    convertTypesRecursively(scheme, rtd->fields[i]->type, cdecs);
   vector<CppField *> fieldsForConstructor;
-  tycc->fields = newRecordTyClassFields(rtd->fields, fieldsForConstructor, classes_from_type);
+  tycc->fields = newRecordTyClassFields(rtd->fields, fieldsForConstructor, 
+      cdecs.classes_from_type);
 
   tycc->constructors.push_back(newRecordTyConstructor(tycc, fieldsForConstructor));
   tycc->methods.push_back(newRecordTySerializeMethod(tycc));
 }
 
-void convertTypeDec(Scheme *scheme, TypeDec *td, 
-                map<string, CppClass *> &classes_from_type, 
-                map<string, CppClass *> &classes_from_cons){
-  if(classes_from_type.find(td->name) != classes_from_type.end())
+void convertTypeDec(Scheme *scheme, TypeDec *td, ClassDecs &cdecs){
+  if(cdecs.classes_from_type.find(td->name) != cdecs.classes_from_type.end())
     return;
   if(InductiveTypeDec *itd = dynamic_cast<InductiveTypeDec *>(td)){
-    convertInductiveTypeDec(scheme, itd, classes_from_type, classes_from_cons);
+    cdecs.inductive_decs[td->name] = itd;
+    convertInductiveTypeDec(scheme, itd, cdecs);
   }else if(RecordTypeDec *rtd = dynamic_cast<RecordTypeDec *>(td)){
-    convertRecordTypeDec(scheme, rtd, classes_from_type, classes_from_cons); 
+    cdecs.record_decs[td->name] = rtd;
+    convertRecordTypeDec(scheme, rtd, cdecs); 
   }
 }
 
 void convert(Scheme *scm, const char *cppout, const char *hppout, vector<string> *printlist){
   ofstream cppfout(cppout);
   ofstream hppfout(hppout);
-
-  map<string, CppClass *> classes_from_type;
-  map<string, CppClass *> classes_from_cons;
+  
+  ClassDecs cdecs;
 
   for(auto itr = scm->decs.begin(); itr != scm->decs.end(); itr++){
-    convertTypeDec(scm, itr->second, classes_from_type, classes_from_cons);
+    convertTypeDec(scm, itr->second, cdecs);
   }
   
   PrintConfig pc;
   pc.indentsize = 2;
-  for(auto itr = classes_from_type.begin(); itr != classes_from_type.end(); itr++){
+  for(auto itr = cdecs.classes_from_type.begin(); itr != cdecs.classes_from_type.end(); itr++){
     if(printlist && printlist->end() == std::find(printlist->begin(), printlist->end(), itr->second->name))
       continue;
     (itr->second)->printDec(hppfout, 0, &pc);
@@ -450,7 +510,7 @@ void convert(Scheme *scm, const char *cppout, const char *hppout, vector<string>
     int printedelems = (itr->second)->printDef(cppfout, 0, &pc);
     if(printedelems) cppfout << endl;
   }
-  for(auto itr = classes_from_cons.begin(); itr != classes_from_cons.end(); itr++){
+  for(auto itr = cdecs.classes_from_cons.begin(); itr != cdecs.classes_from_cons.end(); itr++){
     if(printlist && printlist->end() == std::find(printlist->begin(), printlist->end(), itr->second->name))
       continue;
     (itr->second)->printDec(hppfout, 0, &pc);

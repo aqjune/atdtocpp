@@ -143,7 +143,7 @@ bool CppMethod::printDef(ostream &out, int indentation, PrintConfig *config){
 
   for(int i = 0; i < this->instructions.size(); i++){
     printIndentation(out, indentation + 1, config);
-    out << this->instructions[i] << ";";
+    out << this->instructions[i];
     out << endl;
   }
 
@@ -158,6 +158,16 @@ CppType::CppType(std::string name){
 CppType::CppType(std::string name, std::vector<CppType *> &args){
   this->name = name;
   this->templateArgs = args;
+}
+
+bool CppType::IsVectorTy(CppType *ct){
+  return (ct->name == "vector" || ct->name == "std::vector") && 
+      ct->templateArgs.size() > 0;
+}
+
+bool CppType::IsSharedPtrTy(CppType *ct){
+  return (ct->name == "shared_ptr" || ct->name == "std::shared_ptr") && 
+      ct->templateArgs.size() > 0;
 }
 
 string CppType::toString(){
