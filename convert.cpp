@@ -165,7 +165,7 @@ static CppMethod *newInductiveConsSerializeMethod(CppClass *parent, string cons_
       }
     }
     if(parent->fields.size() > 1){
-      ADDINST("archive.finishNode()");
+      ADDINST("archive.finishNode();");
     }
   }
 #undef ADDINST

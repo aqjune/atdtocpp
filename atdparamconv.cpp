@@ -41,8 +41,13 @@ int main(int argc, char** argv) {
       Field *f = *fitr;
       NamedType *ftype = dynamic_cast<NamedType*>(f->type);
       assert(ftype);
-      fout << "     let " << f->name << " = Convert." << ftype->name << 
-          " args." << f->name << " in" << endl;
+      if (ftype->name == "expr") {
+        fout << "     let " << f->name << " = Convert." << ftype->name << 
+            " args." << f->name << " src_fdef tgt_fdef in" << endl;
+      } else {
+        fout << "     let " << f->name << " = Convert." << ftype->name << 
+            " args." << f->name << " in" << endl;
+      }
 
       if(fitr != itemdec->fields.begin())
         args += ", ";
