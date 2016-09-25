@@ -1,0 +1,14 @@
+bop     bop
+cond    icmp_pred
+const   constant
+Expr.t  expr
+fbop    fbop
+floating_point  float_type
+id      register
+IdT.t   register
+INTEGER.t       const_int
+Ptr.t   pointer
+sz      size
+typ     value_type
+ValueT.t        value
+align   size
